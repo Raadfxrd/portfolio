@@ -1,16 +1,16 @@
 interface EmailTemplate {
-  subject: string;
-  html: string;
-  text: string;
+    subject: string;
+    html: string;
+    text: string;
 }
 
 export const emailTemplates = {
-  /**
-   * Welcome email sent when user subscribes
-   */
-  subscriptionConfirmation: (unsubscribeUrl: string): EmailTemplate => ({
-    subject: "Welcome to borysbabas.dev! 🎉",
-    html: `
+    /**
+     * Welcome email sent when user subscribes
+     */
+    subscriptionConfirmation: (unsubscribeUrl: string): EmailTemplate => ({
+        subject: "Welcome to borysbabas.dev! 🎉",
+        html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -138,7 +138,7 @@ export const emailTemplates = {
 </body>
 </html>
     `,
-    text: `
+        text: `
 Welcome to borysbabas.dev! 🎉
 
 Thanks for subscribing!
@@ -163,21 +163,21 @@ Unsubscribe: ${unsubscribeUrl}
 
 © ${new Date().getFullYear()} borysbabas.dev. All rights reserved.
     `.trim(),
-  }),
+    }),
 
-  /**
-   * Email sent when a new blog post is published
-   */
-  newBlogPost: (
-    post: {
-      title: string;
-      description: string;
-      slug: string;
-    },
-    unsubscribeUrl: string,
-  ): EmailTemplate => ({
-    subject: `New Post: ${post.title}`,
-    html: `
+    /**
+     * Email sent when a new blog post is published
+     */
+    newBlogPost: (
+        post: {
+            title: string;
+            description: string;
+            slug: string;
+        },
+        unsubscribeUrl: string,
+    ): EmailTemplate => ({
+        subject: `New Post: ${post.title}`,
+        html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -300,7 +300,7 @@ Unsubscribe: ${unsubscribeUrl}
 </body>
 </html>
     `,
-    text: `
+        text: `
 New Blog Post from borysbabas.dev 📝
 
 ${post.title}
@@ -320,14 +320,14 @@ Unsubscribe: ${unsubscribeUrl}
 
 © ${new Date().getFullYear()} borysbabas.dev. All rights reserved.
     `.trim(),
-  }),
+    }),
 
-  /**
-   * Unsubscribe confirmation email
-   */
-  unsubscribeConfirmation: (): EmailTemplate => ({
-    subject: "You've been unsubscribed",
-    html: `
+    /**
+     * Unsubscribe confirmation email
+     */
+    unsubscribeConfirmation: (): EmailTemplate => ({
+        subject: "You've been unsubscribed",
+        html: `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -402,7 +402,7 @@ Unsubscribe: ${unsubscribeUrl}
 </body>
 </html>
     `,
-    text: `
+        text: `
 You've been unsubscribed
           
 You won't receive any more emails from borysbabas.dev.
@@ -411,5 +411,5 @@ Sorry to see you go! If you change your mind, you can always subscribe again on 
           
 © ${new Date().getFullYear()} borysbabas.dev. All rights reserved.
     `.trim(),
-  }),
+    }),
 };

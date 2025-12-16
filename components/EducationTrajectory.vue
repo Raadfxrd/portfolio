@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-background-light border-border-light rounded-lg border p-3 md:p-4"
+      class="bg-background-light border-border-light rounded-lg border p-3 md:p-4"
   >
     <h2 class="gradient mb-3 w-fit text-xs font-bold md:mb-4 md:text-sm">
       Education
@@ -13,12 +13,12 @@
         @click="openModal(index)"
       >
         <div
-          class="flex h-8 w-8 shrink-0 items-center justify-center md:h-10 md:w-10"
+            class="flex h-8 w-8 shrink-0 items-center justify-center md:h-10 md:w-10"
         >
           <img
-            :alt="education.school"
-            :src="education.icon"
-            class="border-border-light h-full w-fit rounded-full border bg-white object-contain p-1"
+              :alt="education.school"
+              :src="education.icon"
+              class="border-border-light h-full w-fit rounded-full border bg-white object-contain p-1"
           />
         </div>
         <div class="grow">
@@ -26,15 +26,15 @@
             {{ education.degree }}
           </h3>
           <div
-            class="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-0"
+              class="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-0"
           >
             <p class="text-text-secondary mt-0.5 max-w-5/10 text-xs">
               {{ education.school }}
             </p>
 
             <span class="text-text-secondary text-xs">{{
-              education.period
-            }}</span>
+                education.period
+              }}</span>
           </div>
         </div>
       </div>
@@ -42,23 +42,23 @@
 
     <!-- Modal -->
     <DetailModal
-      :description="currentEducation?.description"
-      :details="currentEducation?.focusAreas"
-      :icon="currentEducation?.icon || ''"
-      :is-open="openModalIndex !== null && currentEducation !== null"
-      :meta-icon="AcademicCapIcon"
-      :meta-text="currentEducation?.school || ''"
-      :period="currentEducation?.period || ''"
-      :title="currentEducation?.degree || ''"
-      details-title="Focus Areas"
-      @close="closeModal"
+        :description="currentEducation?.description"
+        :details="currentEducation?.focusAreas"
+        :icon="currentEducation?.icon || ''"
+        :is-open="openModalIndex !== null && currentEducation !== null"
+        :meta-icon="AcademicCapIcon"
+        :meta-text="currentEducation?.school || ''"
+        :period="currentEducation?.period || ''"
+        :title="currentEducation?.degree || ''"
+        details-title="Focus Areas"
+        @close="closeModal"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { AcademicCapIcon } from "@heroicons/vue/24/outline";
-import { computed, ref } from "vue";
+import {AcademicCapIcon} from "@heroicons/vue/24/outline";
+import {computed, ref} from "vue";
 
 const props = defineProps<{
   educations: Array<{

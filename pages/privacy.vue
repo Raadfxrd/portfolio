@@ -8,12 +8,12 @@ useSeoMeta({
 <template>
   <div class="relative w-full">
     <section
-      class="container mx-auto min-h-screen w-fit px-4 pt-20 pb-12 md:px-6 md:pt-30 md:pb-20"
+        class="container mx-auto min-h-screen w-fit px-4 pt-20 pb-12 md:px-6 md:pt-30 md:pb-20"
     >
       <div class="mx-auto max-w-4xl">
         <div class="mb-8 md:mb-12">
           <h1
-            class="gradient w-fit pb-3 text-3xl font-bold md:mb-4 md:text-4xl lg:text-5xl"
+              class="gradient w-fit pb-3 text-3xl font-bold md:mb-4 md:text-4xl lg:text-5xl"
           >
             Privacy Policy
           </h1>
@@ -25,12 +25,12 @@ useSeoMeta({
         <div class="prose prose-invert max-w-none space-y-6 md:space-y-8">
           <section class="bg-background-light w-fit rounded-lg p-4 md:p-6">
             <h2
-              class="text-text-primary mb-3 w-fit text-xl font-semibold md:mb-4 md:text-2xl"
+                class="text-text-primary mb-3 w-fit text-xl font-semibold md:mb-4 md:text-2xl"
             >
               Introduction
             </h2>
             <p
-              class="text-text-secondary w-fit text-sm leading-relaxed md:text-base"
+                class="text-text-secondary w-fit text-sm leading-relaxed md:text-base"
             >
               Welcome to borysbabas.dev. This Privacy Policy explains how I
               collect, use, and protect your personal information when you visit
@@ -234,17 +234,17 @@ useSeoMeta({
               <p>
                 <strong>Email: </strong>
                 <a class="social-link underline" href="mailto:borysbabas@pm.me"
-                  >borysbabas@pm.me</a
+                >borysbabas@pm.me</a
                 >
               </p>
               <p>
                 <strong>GitHub: </strong>
                 <a
-                  class="social-link underline"
-                  href="https://github.com/raadfxrd"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  >@raadfxrd</a
+                    class="social-link underline"
+                    href="https://github.com/raadfxrd"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                >@raadfxrd</a
                 >
               </p>
             </div>

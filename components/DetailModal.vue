@@ -12,12 +12,12 @@
         >
           <!-- Close Button -->
           <button
-              @click="$emit('close')"
-              class="absolute top-4 right-4 p-2 rounded-lg hover:bg-background-light transition-colors duration-200"
               aria-label="Close modal"
+              class="absolute top-4 right-4 p-2 rounded-lg hover:bg-background-light transition-colors duration-200"
+              @click="$emit('close')"
           >
-            <svg class="w-6 h-6 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <svg class="w-6 h-6 text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
             </svg>
           </button>
 
@@ -27,7 +27,7 @@
             <slot name="icon">
               <div v-if="icon"
                    class="mb-6 inline-flex items-center justify-center rounded-xl bg-white p-4 border border-border-light">
-                <img :src="icon" :alt="title" class="w-16 h-16 object-contain"/>
+                <img :alt="title" :src="icon" class="w-16 h-16 object-contain"/>
               </div>
             </slot>
 

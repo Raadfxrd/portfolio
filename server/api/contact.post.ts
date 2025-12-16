@@ -1,80 +1,80 @@
-import { sendEmail } from "~/server/utils/email";
-import { verifyRecaptcha } from "~/server/utils/recaptcha";
+import {sendEmail} from "~/server/utils/email";
+import {verifyRecaptcha} from "~/server/utils/recaptcha";
 
 interface ContactFormBody {
-  name: string;
-  email: string;
-  message: string;
-  recaptchaToken?: string;
+    name: string;
+    email: string;
+    message: string;
+    recaptchaToken?: string;
 }
 
 export default defineEventHandler(async (event) => {
-  try {
-    const body = await readBody<ContactFormBody>(event);
+    try {
+        const body = await readBody<ContactFormBody>(event);
 
-    // Validate body exists
-    if (!body) {
-      throw createError({
-        status: 400,
-        message: "Request body is required",
-      });
-    }
+        // Validate body exists
+        if (!body) {
+            throw createError({
+                status: 400,
+                message: "Request body is required",
+            });
+        }
 
-    const { name, email, message, recaptchaToken } = body;
+        const {name, email, message, recaptchaToken} = body;
 
-    // Validate input
-    if (!name || !email || !message) {
-      throw createError({
-        status: 400,
-        message: "Missing required fields",
-      });
-    }
+        // Validate input
+        if (!name || !email || !message) {
+            throw createError({
+                status: 400,
+                message: "Missing required fields",
+            });
+        }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw createError({
-        status: 400,
-        message: "Invalid email format",
-      });
-    }
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            throw createError({
+                status: 400,
+                message: "Invalid email format",
+            });
+        }
 
-    // Verify reCAPTCHA token
-    const isDevelopment = process.env.NODE_ENV === "development";
-    const shouldSkipRecaptcha = process.env.SKIP_RECAPTCHA === "true";
+        // Verify reCAPTCHA token
+        const isDevelopment = process.env.NODE_ENV === "development";
+        const shouldSkipRecaptcha = process.env.SKIP_RECAPTCHA === "true";
 
-    if (recaptchaToken) {
-      // Only verify if we have a token
-      await verifyRecaptcha({
-        token: recaptchaToken,
-        minScore: 0.5, // Require at least 0.5 score for contact form
-        expectedAction: "submit_contact", // Verify the action matches
-      });
-    } else {
-      // No token provided
-      if (!isDevelopment && !shouldSkipRecaptcha) {
-        throw createError({
-          status: 400,
-          message: "reCAPTCHA token is required",
-        });
-      } else {
-        console.log(
-          "ℹ️  reCAPTCHA verification skipped (development mode or SKIP_RECAPTCHA=true)",
-        );
-      }
-    }
+        if (recaptchaToken) {
+            // Only verify if we have a token
+            await verifyRecaptcha({
+                token: recaptchaToken,
+                minScore: 0.5, // Require at least 0.5 score for contact form
+                expectedAction: "submit_contact", // Verify the action matches
+            });
+        } else {
+            // No token provided
+            if (!isDevelopment && !shouldSkipRecaptcha) {
+                throw createError({
+                    status: 400,
+                    message: "reCAPTCHA token is required",
+                });
+            } else {
+                console.log(
+                    "ℹ️  reCAPTCHA verification skipped (development mode or SKIP_RECAPTCHA=true)",
+                );
+            }
+        }
 
-    // Prepare email content
-    const contactEmail = process.env.CONTACT_EMAIL || "borysbabas@pm.me";
-    const subject = `Contact request: ${name}`;
-    const text = `
+        // Prepare email content
+        const contactEmail = process.env.CONTACT_EMAIL || "borysbabas@pm.me";
+        const subject = `Contact request: ${name}`;
+        const text = `
 Name: ${name}
 Email: ${email}
 Message:
 ${message}
       `.trim();
 
-    const html = `
+        const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -224,65 +224,65 @@ ${message}
 </html>
       `.trim();
 
-    // Send email using utility function (respects USE_RESEND flag)
-    try {
-      await sendEmail({
-        to: contactEmail,
-        subject,
-        html,
-        text,
-        replyTo: email,
-      });
-      console.log("✅ Contact email sent");
-    } catch (emailError: any) {
-      console.error("Failed to send contact email:", emailError);
-
-      // In development, save email locally if sending fails
-      if (isDevelopment) {
+        // Send email using utility function (respects USE_RESEND flag)
         try {
-          const fs = await import("fs/promises");
-          const path = await import("path");
-          const outDir = path.resolve(process.cwd(), ".local-mails");
-          await fs.mkdir(outDir, { recursive: true });
-          const filename = path.join(outDir, `${Date.now()}-contact.json`);
-          await fs.writeFile(
-            filename,
-            JSON.stringify(
-              {
+            await sendEmail({
                 to: contactEmail,
-                replyTo: email,
                 subject,
-                text,
                 html,
-                timestamp: new Date().toISOString(),
-              },
-              null,
-              2,
-            ),
-          );
-          console.log(`   📧 Saved to: ${path.basename(filename)}`);
-        } catch (persistErr) {
-          console.error("Failed to persist unsent email locally:", persistErr);
+                text,
+                replyTo: email,
+            });
+            console.log("✅ Contact email sent");
+        } catch (emailError: any) {
+            console.error("Failed to send contact email:", emailError);
+
+            // In development, save email locally if sending fails
+            if (isDevelopment) {
+                try {
+                    const fs = await import("fs/promises");
+                    const path = await import("path");
+                    const outDir = path.resolve(process.cwd(), ".local-mails");
+                    await fs.mkdir(outDir, {recursive: true});
+                    const filename = path.join(outDir, `${Date.now()}-contact.json`);
+                    await fs.writeFile(
+                        filename,
+                        JSON.stringify(
+                            {
+                                to: contactEmail,
+                                replyTo: email,
+                                subject,
+                                text,
+                                html,
+                                timestamp: new Date().toISOString(),
+                            },
+                            null,
+                            2,
+                        ),
+                    );
+                    console.log(`   📧 Saved to: ${path.basename(filename)}`);
+                } catch (persistErr) {
+                    console.error("Failed to persist unsent email locally:", persistErr);
+                }
+            }
         }
-      }
+
+        return {
+            success: true,
+            message: "Message sent successfully",
+        };
+    } catch (error: any) {
+        console.error("Contact form error:", error);
+
+        // If it's already a formatted error, throw it
+        if (error.status || error.statusCode) {
+            throw error;
+        }
+
+        // Otherwise, create a generic error
+        throw createError({
+            status: 500,
+            message: "Failed to send message. Please try again later.",
+        });
     }
-
-    return {
-      success: true,
-      message: "Message sent successfully",
-    };
-  } catch (error: any) {
-    console.error("Contact form error:", error);
-
-    // If it's already a formatted error, throw it
-    if (error.status || error.statusCode) {
-      throw error;
-    }
-
-    // Otherwise, create a generic error
-    throw createError({
-      status: 500,
-      message: "Failed to send message. Please try again later.",
-    });
-  }
 });
