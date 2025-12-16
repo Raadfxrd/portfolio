@@ -9,7 +9,7 @@
       <div
         v-for="(experience, index) in experiences"
         :key="experience.title"
-        class="group hover:bg-background-light-2/90 hover-lift flex cursor-pointer items-start gap-2 rounded-lg p-1.5 transition-all duration-200 md:gap-3 md:p-2"
+        class="group hover:bg-background-light-2/90 hover-lift cursor-hover flex cursor-pointer items-start gap-2 rounded-lg p-1.5 transition-all duration-200 md:gap-3 md:p-2"
         @click="openModal(index)"
       >
         <div
@@ -70,10 +70,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  BriefcaseIcon,
-  DocumentArrowDownIcon,
-} from "@heroicons/vue/24/outline";
+import { BriefcaseIcon, DocumentArrowDownIcon } from "@heroicons/vue/24/outline";
 import { computed, ref } from "vue";
 
 const props = defineProps<{
