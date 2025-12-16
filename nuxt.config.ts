@@ -36,6 +36,15 @@ export default defineNuxtConfig({
 
   modules: ["@nuxtjs/color-mode", "@nuxt/content"],
 
+  imports: {
+    presets: [
+      {
+        from: "@nuxt/content/dist/runtime/legacy/composables",
+        imports: ["queryCollection"],
+      },
+    ],
+  },
+
   colorMode: {
     preference: "system", // default value if no preference is stored
     fallback: "dark", // fallback value if system can't be detected

@@ -1,253 +1,271 @@
 /* Animation for the TechStack scrolling */
 .animate-scroll {
-	animation: scroll 60s linear infinite;
+    animation: scroll 60s linear infinite;
 }
 
 /* Intro animations */
 .animate-introFadeOut {
-	animation: introFadeOut 1s ease forwards;
+    animation: introFadeOut 1s ease forwards;
 }
 
 .animate-scaleIn {
-	animation: scaleIn 1s ease-out;
+    animation: scaleIn 1s ease-out;
 }
 
 /* Content Entrance */
 .animate-contentEnter {
-	animation: contentEnter 1s ease-out forwards;
+    animation: contentEnter 1s ease-out forwards;
 }
 
 /* Letter Reveal Animation */
 .animate-letterReveal {
-	animation: letterReveal 0.6s ease-out forwards;
+    animation: letterReveal 0.6s ease-out forwards;
+}
+
+/* Text Reveal Animation */
+.animate-textReveal {
+    animation: textReveal 0.8s ease-out forwards;
+    opacity: 0;
 }
 
 /* Word Reveal for Greeting & Text Sections */
 .animate-wordDelay {
-	animation: wordDelay 0s linear forwards;
-	animation-fill-mode: forwards;
+    animation: wordDelay 0s linear forwards;
+    animation-fill-mode: forwards;
 }
 
 /* Fade-In for Texts (Like Button) */
 .animate-fadeIn {
-	animation: fadeIn 1s ease-out forwards;
+    animation: fadeIn 1s ease-out forwards;
 }
 
 .animate-fadeOut {
-	animation: fadeOut 0.5s ease-out forwards;
+    animation: fadeOut 0.5s ease-out forwards;
 }
 
 /* Button Shine Effect */
 .group-hover\:animate-shine {
-	animation: shine 0.8s ease-in-out forwards;
+    animation: shine 0.8s ease-in-out forwards;
 }
 
 /* Image Rotate In */
 .animate-rotateIn {
-	animation: rotateIn 0.8s ease-out;
+    animation: rotateIn 0.8s ease-out;
 }
 
 /* Navbar fade-in*/
 .animate-navbarFadeIn {
-	animation: navbarFadeIn 0.6s ease-out forwards;
+    animation: navbarFadeIn 0.6s ease-out forwards;
 }
 
 .animate-floatSlow {
-	animation: floatSlow 10s ease-in-out infinite;
+    animation: floatSlow 10s ease-in-out infinite;
 }
 
 .animate-tilt {
-	animation: tilt 8s ease-in-out infinite alternate;
+    animation: tilt 8s ease-in-out infinite alternate;
 }
 
 .animate-pulseGlow {
-	animation: pulseGlow 2.8s ease-in-out infinite;
+    animation: pulseGlow 2.8s ease-in-out infinite;
 }
 
 .animate-gradientShift {
-	animation: gradientShift 12s ease-in-out infinite alternate;
+    animation: gradientShift 12s ease-in-out infinite alternate;
 }
 
 /* TechStack scrolling */
 @keyframes scroll {
-	0% {
-		transform: translateX(0);
-	}
-	100% {
-		transform: translateX(-50%);
-	}
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
 }
 
 /* Intro animations */
 @keyframes introFadeOut {
-	0% {
-		opacity: 1;
-	}
-	80% {
-		opacity: 1;
-	}
-	100% {
-		opacity: 0;
-		pointer-events: none;
-	}
+    0% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 @keyframes scaleIn {
-	0% {
-		transform: scale(0.9);
-		opacity: 0;
-	}
-	100% {
-		transform: scale(1);
-		opacity: 1;
-	}
+    0% {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Content Entrance */
 @keyframes contentEnter {
-	0% {
-		opacity: 0;
-		transform: translateY(40px);
-	}
-	100% {
-		opacity: 1;
-		transform: translateY(0);
-	}
+    0% {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Letter Reveal Animation */
 @keyframes letterReveal {
-	0% {
-		opacity: 0;
-		transform: translateY(20px);
-	}
-	100% {
-		opacity: 1;
-		transform: translateY(0);
-	}
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Text Reveal Animation */
+@keyframes textReveal {
+    0% {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Word Reveal for Greeting & Text Sections */
 @keyframes wordDelay {
-	0% {
-		opacity: 0;
-	}
-	100% {
-		opacity: 1;
-	}
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 
 /* Fade-In for Texts (Like Button) */
 @keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes fadeOut {
-	from {
-		opacity: 1;
-	}
-	to {
-		opacity: 0;
-	}
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
 }
 
 /* Button Shine Effect */
 @keyframes shine {
-	0% {
-		transform: translateX(-100%);
-	}
-	100% {
-		transform: translateX(100%);
-	}
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 /* Image Rotate In */
 @keyframes rotateIn {
-	0% {
-		opacity: 0;
-		transform: rotate(-10deg) scale(0.95);
-	}
-	100% {
-		opacity: 1;
-		transform: rotate(0deg) scale(1);
-	}
+    0% {
+        opacity: 0;
+        transform: rotate(-10deg) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: rotate(0deg) scale(1);
+    }
 }
 
 @keyframes bounce {
-	0% {
-		transform: translateY(0);
-	}
-	50% {
-		transform: translateY(-10px);
-	}
-	100% {
-		transform: translateY(0);
-	}
+    0% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    100% {
+        transform: translateY(0);
+    }
 }
 
 @keyframes navbarFadeIn {
-	0% {
-		opacity: 0;
-		transform: translateY(-20px);
-	}
-	100% {
-		opacity: 1;
-		transform: translateY(0);
-	}
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes floatSlow {
-	0% {
-		transform: translate3d(0, 0, 0);
-	}
-	50% {
-		transform: translate3d(0, -10px, 0);
-	}
-	100% {
-		transform: translate3d(0, 8px, 0);
-	}
+    0% {
+        transform: translate3d(0, 0, 0);
+    }
+    50% {
+        transform: translate3d(0, -10px, 0);
+    }
+    100% {
+        transform: translate3d(0, 8px, 0);
+    }
 }
 
 @keyframes tilt {
-	0% {
-		transform: rotate(-0.6deg);
-	}
-	50% {
-		transform: rotate(0.8deg);
-	}
-	100% {
-		transform: rotate(-0.4deg);
-	}
+    0% {
+        transform: rotate(-0.6deg);
+    }
+    50% {
+        transform: rotate(0.8deg);
+    }
+    100% {
+        transform: rotate(-0.4deg);
+    }
 }
 
 @keyframes pulseGlow {
-	0% {
-		opacity: 0.6;
-		filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
-	}
-	50% {
-		opacity: 1;
-		filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.35));
-	}
-	100% {
-		opacity: 0.7;
-		filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.22));
-	}
+    0% {
+        opacity: 0.6;
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.35));
+    }
+    100% {
+        opacity: 0.7;
+        filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.22));
+    }
 }
 
 @keyframes gradientShift {
-	0% {
-		background-position: 0 50%;
-	}
-	50% {
-		background-position: 100% 50%;
-	}
-	100% {
-		background-position: 0 50%;
-	}
+    0% {
+        background-position: 0 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0 50%;
+    }
 }
