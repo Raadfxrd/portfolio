@@ -12,14 +12,14 @@
         <!-- Small Logo -->
         <img
           alt="Small Logo"
-          class="border-border-dark h-8 w-8 flex-shrink-0 rounded-full border-1 hover:cursor-pointer md:h-10 md:w-10"
+          class="border-border-dark h-8 w-8 shrink-0 rounded-full border hover:cursor-pointer md:h-10 md:w-10"
           src="/public/img/raadfxrd.jpeg"
           @click="$router.push('/')"
         />
 
         <!-- Nav Links -->
         <div
-          class="bg-background-light/20 border-border-light text-light flex items-center gap-3 rounded-full border-1 border-solid px-3 py-2 backdrop-blur-lg transition duration-300 md:gap-10 md:px-8 md:py-3"
+          class="backdrop-blur-fallback border-border-light text-light flex items-center gap-3 rounded-full border border-solid px-3 py-2 transition duration-300 md:gap-10 md:px-8 md:py-3"
         >
           <NavLinks />
         </div>
@@ -27,7 +27,7 @@
         <!-- Theme Toggle Button -->
         <button
           :aria-label="`Current theme: ${colorMode.preference}`"
-          class="bg-background-light/20 ring-border-light flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full backdrop-blur-lg transition duration-300 hover:ring-1 md:h-10 md:w-10"
+          class="backdrop-blur-fallback ring-border-light flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition duration-300 hover:ring-1 md:h-10 md:w-10"
           @click="toggleTheme"
         >
           <component

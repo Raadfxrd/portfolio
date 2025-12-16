@@ -1,13 +1,13 @@
 <template>
   <div
-    class="bg-background-dark flex min-h-screen flex-col"
-    @mousemove="updateCursor"
+      class="bg-background-dark flex min-h-screen flex-col"
+      @mousemove="updateCursor"
   >
-    <AdminNavbar />
+    <AdminNavbar/>
     <main class="flex-1 overflow-y-auto">
-      <slot />
+      <slot/>
     </main>
-    <div ref="cursor" :class="['cursor', cursorType]" />
+    <div ref="cursor" :class="['cursor', cursorType]"/>
   </div>
 </template>
 
@@ -34,14 +34,14 @@ const updateCursor = (e: MouseEvent) => {
   } else if (target.closest("a, button, [role='button'], .cursor-hover")) {
     cursorType.value = "hover";
   } else if (
-    ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
-    getComputedStyle(target).cursor === "text" ||
-    target.closest(
-      "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, li",
-    ) ||
-    target.matches(
-      "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, article, li",
-    )
+      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
+      getComputedStyle(target).cursor === "text" ||
+      target.closest(
+          "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, li",
+      ) ||
+      target.matches(
+          "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, article, li",
+      )
   ) {
     cursorType.value = "text";
   } else {
@@ -87,9 +87,8 @@ onUnmounted(() => {
   z-index: 9999;
   mix-blend-mode: difference;
   transform: translate(-50%, -50%);
-  transition:
-    width 0.15s ease,
-    height 0.15s ease;
+  transition: width 0.15s ease,
+  height 0.15s ease;
 }
 
 .cursor.hover {

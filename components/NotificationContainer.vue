@@ -1,23 +1,23 @@
 <template>
   <div
-    class="pointer-events-none fixed bottom-4 left-1/2 z-9999 flex -translate-x-1/2 flex-col gap-3"
+      class="pointer-events-none fixed bottom-4 left-1/2 z-9999 flex -translate-x-1/2 flex-col gap-3"
   >
     <AnimatePresence>
       <Motion
-        v-for="notification in notifications"
-        :key="notification.id"
-        :animate="{ opacity: 1, y: 0, scale: 1 }"
-        :class="getNotificationClasses(notification.type)"
-        :exit="{ opacity: 0, y: 20, scale: 0.9 }"
-        :initial="{ opacity: 0, y: 30, scale: 0.95 }"
-        :transition="{ duration: 0.3 }"
-        class="pointer-events-auto flex min-w-[320px] items-start gap-3 rounded-lg border p-4 shadow-lg backdrop-blur-sm"
+          v-for="notification in notifications"
+          :key="notification.id"
+          :animate="{ opacity: 1, y: 0, scale: 1 }"
+          :class="getNotificationClasses(notification.type)"
+          :exit="{ opacity: 0, y: 20, scale: 0.9 }"
+          :initial="{ opacity: 0, y: 30, scale: 0.95 }"
+          :transition="{ duration: 0.3 }"
+          class="pointer-events-auto flex min-w-[320px] items-start gap-3 rounded-lg border p-4 shadow-lg backdrop-blur-sm"
       >
         <!-- Icon -->
         <div class="shrink-0">
           <component
-            :is="getIconComponent(notification.type)"
-            class="h-5 w-5"
+              :is="getIconComponent(notification.type)"
+              class="h-5 w-5"
           />
         </div>
 
@@ -30,10 +30,10 @@
 
         <!-- Close Button -->
         <button
-          class="shrink-0 opacity-70 transition-opacity hover:opacity-100"
-          @click="removeNotification(notification.id)"
+            class="shrink-0 opacity-70 transition-opacity hover:opacity-100"
+            @click="removeNotification(notification.id)"
         >
-          <XMarkIcon class="h-4 w-4" />
+          <XMarkIcon class="h-4 w-4"/>
         </button>
       </Motion>
     </AnimatePresence>
@@ -41,7 +41,7 @@
 </template>
 
 <script lang="ts" setup>
-import { AnimatePresence, Motion } from "motion-v";
+import {AnimatePresence, Motion} from "motion-v";
 import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -49,9 +49,9 @@ import {
   XCircleIcon,
   XMarkIcon
 } from "@heroicons/vue/24/outline";
-import { type NotificationType, useNotification } from "~/composables/useNotification";
+import {type NotificationType, useNotification} from "~/composables/useNotification";
 
-const { notifications, removeNotification } = useNotification();
+const {notifications, removeNotification} = useNotification();
 
 const getNotificationClasses = (type: NotificationType) => {
   switch (type) {

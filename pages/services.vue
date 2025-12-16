@@ -1,14 +1,11 @@
 <script lang="ts" setup>
-import {
-  CommandLineIcon,
-  ComputerDesktopIcon,
-} from "@heroicons/vue/24/outline";
-import { computed, ref } from "vue";
+import {CommandLineIcon, ComputerDesktopIcon,} from "@heroicons/vue/24/outline";
+import {computed, ref} from "vue";
 
 useSeoMeta({
   title: "Services - Borys",
   description:
-    "Custom PC building & assembly and mechanical keyboard builds. Professional hardware solutions tailored to your needs.",
+      "Custom PC building & assembly and mechanical keyboard builds. Professional hardware solutions tailored to your needs.",
   ogTitle: "Services - Borys",
   ogDescription: "PC building and custom keyboard assembly services",
   ogImage: "/img/portfolio.png",
@@ -39,7 +36,7 @@ const services: Service[] = [
     icon: ComputerDesktopIcon,
     emoji: "🖥️",
     description:
-      "Custom PC builds tailored to your exact needs. Whether you're a gamer, content creator, or developer, I'll help you pick the perfect components and assemble them professionally.",
+        "Custom PC builds tailored to your exact needs. Whether you're a gamer, content creator, or developer, I'll help you pick the perfect components and assemble them professionally.",
     features: [
       "Component selection & compatibility consultation",
       "Budget optimization & best value recommendations",
@@ -103,7 +100,7 @@ const services: Service[] = [
     icon: CommandLineIcon,
     emoji: "⌨️",
     description:
-      "Elevate your typing experience with a custom mechanical keyboard. From switch selection to full assembly, I'll create a keyboard that's uniquely yours.",
+        "Elevate your typing experience with a custom mechanical keyboard. From switch selection to full assembly, I'll create a keyboard that's uniquely yours.",
     features: [
       "Switch type consultation (linear, tactile, clicky)",
       "PCB, case, and keycap selection guidance",
@@ -113,7 +110,7 @@ const services: Service[] = [
       "Sound dampening & acoustic optimization",
     ],
     perfectFor:
-      "Enthusiasts, programmers, writers, anyone who values typing quality",
+        "Enthusiasts, programmers, writers, anyone who values typing quality",
     pricing: {
       tiers: [
         {
@@ -192,7 +189,7 @@ const closeModal = () => {
       <!-- Header -->
       <div class="mb-12 flex flex-col items-center text-center md:mb-16">
         <h1
-          class="gradient mb-4 w-fit text-4xl font-bold md:text-5xl lg:text-6xl"
+            class="gradient mb-4 w-fit text-4xl font-bold md:text-5xl lg:text-6xl"
         >
           Services
         </h1>
@@ -206,21 +203,21 @@ const closeModal = () => {
       <div class="grid grid-cols-1 gap-6 md:gap-8 lg:grid-cols-2">
         <FadeInSection v-for="(service, index) in services" :key="index">
           <div
-            class="group border-border-light bg-background-light-2 relative h-full cursor-pointer overflow-hidden rounded-2xl border p-6 shadow-lg transition-all duration-300 hover:shadow-2xl md:p-8"
-            @click="openModal(index)"
+              class="group border-border-light bg-background-light-2 relative h-full cursor-pointer overflow-hidden rounded-2xl border p-6 shadow-lg transition-all duration-300 hover:shadow-2xl md:p-8"
+              @click="openModal(index)"
           >
             <!-- Icon & Emoji -->
             <div class="mb-6">
               <div
-                class="border-border-light bg-background-light mb-4 inline-flex items-center justify-center rounded-xl border p-3"
+                  class="border-border-light bg-background-light mb-4 inline-flex items-center justify-center rounded-xl border p-3"
               >
                 <component
-                  :is="service.icon"
-                  class="text-text-primary h-12 w-12"
+                    :is="service.icon"
+                    class="text-text-primary h-12 w-12"
                 />
               </div>
               <h2
-                class="gradient mb-3 w-fit text-2xl font-bold transition-colors md:text-3xl"
+                  class="gradient mb-3 w-fit text-2xl font-bold transition-colors md:text-3xl"
               >
                 {{ service.title }}
               </h2>
@@ -228,7 +225,7 @@ const closeModal = () => {
 
             <!-- Description -->
             <p
-              class="text-text-secondary mb-6 w-fit text-justify leading-relaxed"
+                class="text-text-secondary mb-6 w-fit text-justify leading-relaxed"
             >
               {{ service.description }}
             </p>
@@ -240,9 +237,9 @@ const closeModal = () => {
               </h3>
               <ul class="text-text-secondary space-y-2 text-sm">
                 <li
-                  v-for="(feature, idx) in service.features.slice(0, 4)"
-                  :key="idx"
-                  class="flex w-fit items-start"
+                    v-for="(feature, idx) in service.features.slice(0, 4)"
+                    :key="idx"
+                    class="flex w-fit items-start"
                 >
                   <span class="text-accent mt-1 mr-2">✓</span>
                   <span>{{ feature }}</span>
@@ -250,7 +247,7 @@ const closeModal = () => {
                 <li class="text-accent flex w-fit items-start italic">
                   <span class="mt-1 mr-2">+</span>
                   <span
-                    >{{ service.features.length - 4 }} more features...</span
+                  >{{ service.features.length - 4 }} more features...</span
                   >
                 </li>
               </ul>
@@ -260,7 +257,7 @@ const closeModal = () => {
             <div class="border-border-light mb-4 border-t pt-4">
               <p class="text-text-secondary w-fit text-sm">
                 <span class="text-text-primary font-semibold"
-                  >Perfect for:</span
+                >Perfect for:</span
                 >
                 {{ service.perfectFor }}
               </p>
@@ -268,7 +265,7 @@ const closeModal = () => {
 
             <!-- Click Hint -->
             <p
-              class="text-accent mt-auto w-fit pt-4 text-sm font-medium italic opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                class="text-accent mt-auto w-fit pt-4 text-sm font-medium italic opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             >
               Click to see pricing & details →
             </p>
@@ -280,31 +277,31 @@ const closeModal = () => {
       <Teleport to="body">
         <Transition name="modal">
           <div
-            v-if="openModalIndex !== null && currentService !== null"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-            @click.self="closeModal"
+              v-if="openModalIndex !== null && currentService !== null"
+              class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+              @click.self="closeModal"
           >
             <div
-              class="modal-card border-border-light bg-background-light-2 relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border p-8 shadow-2xl"
-              @click.stop
+                class="modal-card border-border-light bg-background-light-2 relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border p-8 shadow-2xl"
+                @click.stop
             >
               <!-- Close Button -->
               <button
-                aria-label="Close modal"
-                class="bg-background-light hover:bg-background-light-2 absolute top-4 right-4 rounded-lg p-2 transition-colors duration-200"
-                @click="closeModal"
+                  aria-label="Close modal"
+                  class="bg-background-light hover:bg-background-light-2 absolute top-4 right-4 rounded-lg p-2 transition-colors duration-200"
+                  @click="closeModal"
               >
                 <svg
-                  class="text-text-primary h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                    class="text-text-primary h-6 w-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                 >
                   <path
-                    d="M6 18L18 6M6 6l12 12"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
                   />
                 </svg>
               </button>
@@ -313,11 +310,11 @@ const closeModal = () => {
               <div v-if="currentService" class="text-text-primary">
                 <!-- Icon -->
                 <div
-                  class="border-border-light bg-background-light mb-6 inline-flex items-center justify-center rounded-xl border p-4"
+                    class="border-border-light bg-background-light mb-6 inline-flex items-center justify-center rounded-xl border p-4"
                 >
                   <component
-                    :is="currentService.icon"
-                    class="text-text-primary h-12 w-12"
+                      :is="currentService.icon"
+                      class="text-text-primary h-12 w-12"
                   />
                 </div>
 
@@ -328,7 +325,7 @@ const closeModal = () => {
 
                 <!-- Description -->
                 <p
-                  class="text-text-secondary border-border-light mb-6 w-fit border-b pb-6 text-justify text-base leading-relaxed"
+                    class="text-text-secondary border-border-light mb-6 w-fit border-b pb-6 text-justify text-base leading-relaxed"
                 >
                   {{ currentService.description }}
                 </p>
@@ -340,9 +337,9 @@ const closeModal = () => {
                   </h4>
                   <ul class="mb-4 space-y-3">
                     <li
-                      v-for="(detail, idx) in currentService.features"
-                      :key="idx"
-                      class="text-text-secondary flex w-fit items-start space-x-3 text-base"
+                        v-for="(detail, idx) in currentService.features"
+                        :key="idx"
+                        class="text-text-secondary flex w-fit items-start space-x-3 text-base"
                     >
                       <span class="text-accent mt-1 text-lg font-bold">•</span>
                       <span class="flex-1 leading-relaxed">{{ detail }}</span>
@@ -358,9 +355,9 @@ const closeModal = () => {
 
                   <div class="space-y-4">
                     <div
-                      v-for="(tier, idx) in currentService.pricing.tiers"
-                      :key="idx"
-                      class="border-border-light bg-background-light hover:border-accent rounded-xl border p-6 transition-colors duration-200"
+                        v-for="(tier, idx) in currentService.pricing.tiers"
+                        :key="idx"
+                        class="border-border-light bg-background-light hover:border-accent rounded-xl border p-6 transition-colors duration-200"
                     >
                       <div class="mb-3 flex items-start justify-between">
                         <div>
@@ -372,7 +369,7 @@ const closeModal = () => {
                           </p>
                         </div>
                         <div
-                          class="text-accent ml-4 text-2xl font-bold whitespace-nowrap"
+                            class="text-accent ml-4 text-2xl font-bold whitespace-nowrap"
                         >
                           {{ tier.price }}
                         </div>
@@ -380,9 +377,9 @@ const closeModal = () => {
 
                       <ul class="mt-4 space-y-2">
                         <li
-                          v-for="(item, itemIdx) in tier.includes"
-                          :key="itemIdx"
-                          class="text-text-secondary flex w-fit items-start text-sm"
+                            v-for="(item, itemIdx) in tier.includes"
+                            :key="itemIdx"
+                            class="text-text-secondary flex w-fit items-start text-sm"
                         >
                           <span class="text-accent mt-1 mr-2">✓</span>
                           <span>{{ item }}</span>
@@ -393,18 +390,18 @@ const closeModal = () => {
 
                   <!-- Pricing Notes -->
                   <div
-                    class="border-border-light bg-background-light mt-6 rounded-xl border p-4"
+                      class="border-border-light bg-background-light mt-6 rounded-xl border p-4"
                   >
                     <h5
-                      class="text-text-primary mb-3 w-fit text-sm font-semibold"
+                        class="text-text-primary mb-3 w-fit text-sm font-semibold"
                     >
                       Important Notes:
                     </h5>
                     <ul class="space-y-2">
                       <li
-                        v-for="(note, noteIdx) in currentService.pricing.notes"
-                        :key="noteIdx"
-                        class="text-text-secondary flex w-fit items-start text-xs"
+                          v-for="(note, noteIdx) in currentService.pricing.notes"
+                          :key="noteIdx"
+                          class="text-text-secondary flex w-fit items-start text-xs"
                       >
                         <span class="text-accent mt-1 mr-2">•</span>
                         <span>{{ note }}</span>
@@ -422,10 +419,10 @@ const closeModal = () => {
       <FadeInSection>
         <div class="mt-16 text-center">
           <div
-            class="border-border-light bg-background-light-2 mx-auto max-w-3xl rounded-2xl border p-8 shadow-lg md:p-12"
+              class="border-border-light bg-background-light-2 mx-auto max-w-3xl rounded-2xl border p-8 shadow-lg md:p-12"
           >
             <h2
-              class="gradient mx-auto mb-4 w-fit text-2xl font-bold md:text-3xl"
+                class="gradient mx-auto mb-4 w-fit text-2xl font-bold md:text-3xl"
             >
               Ready to Start Your Project?
             </h2>
@@ -433,8 +430,8 @@ const closeModal = () => {
               Let's discuss your needs and create something amazing together.
             </p>
             <NuxtLink
-              class="border-text-primary bg-background-light text-text-primary hover:bg-text-primary hover:text-background-light inline-block rounded-xl border-2 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:shadow-lg"
-              to="/contact"
+                class="border-text-primary bg-background-light text-text-primary hover:bg-text-primary hover:text-background-light inline-block rounded-xl border-2 px-8 py-4 text-lg font-semibold transition-all duration-300 hover:shadow-lg"
+                to="/contact"
             >
               Get in Touch
             </NuxtLink>

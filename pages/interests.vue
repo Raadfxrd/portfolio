@@ -155,11 +155,11 @@ const quickFacts = [
 
       <!-- Modal -->
       <DetailModal
-          :is-open="openModalIndex !== null && currentInterest !== null"
-          :icon="''"
-          :title="currentInterest?.title || ''"
           :description="currentInterest?.text"
           :details="currentInterest?.details"
+          :icon="''"
+          :is-open="openModalIndex !== null && currentInterest !== null"
+          :title="currentInterest?.title || ''"
           details-title="More Details"
           @close="closeModal"
       >
@@ -205,8 +205,8 @@ const quickFacts = [
             people and discussing exciting ideas.
           </p>
           <NuxtLink
-              to="/contact"
               class="inline-block rounded-xl border-2 border-text-primary bg-background-light px-8 py-4 text-lg font-semibold text-text-primary transition-all duration-300 hover:bg-text-primary hover:text-background-light hover:shadow-lg"
+              to="/contact"
           >
             Get in Touch
           </NuxtLink>

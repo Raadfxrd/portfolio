@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref } from "vue";
-import { marked } from "marked";
+import {onMounted, onUnmounted, ref} from "vue";
+import {marked} from "marked";
 
 interface Repository {
   id: number;
@@ -45,27 +45,27 @@ const fetchGitHubRepos = async () => {
     }
 
     const reposResponse = await fetch(
-      "https://api.github.com/users/raadfxrd/repos?sort=updated&per_page=20",
-      { headers },
+        "https://api.github.com/users/raadfxrd/repos?sort=updated&per_page=20",
+        {headers},
     );
 
     if (!reposResponse.ok) {
       if (reposResponse.status === 403) {
         const rateLimitRemaining = reposResponse.headers.get(
-          "X-RateLimit-Remaining",
+            "X-RateLimit-Remaining",
         );
         const rateLimitReset = reposResponse.headers.get("X-RateLimit-Reset");
 
         if (rateLimitRemaining === "0") {
           const resetDate = rateLimitReset
-            ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString()
-            : "unknown";
+              ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString()
+              : "unknown";
           console.error(
-            "GitHub API rate limit exceeded. Resets at:",
-            resetDate,
+              "GitHub API rate limit exceeded. Resets at:",
+              resetDate,
           );
           throw new Error(
-            `GitHub API rate limit exceeded. Please try again after ${resetDate}`,
+              `GitHub API rate limit exceeded. Please try again after ${resetDate}`,
           );
         }
       }
@@ -77,144 +77,144 @@ const fetchGitHubRepos = async () => {
     const publicRepos = reposData.filter((repo: any) => !repo.fork);
 
     repos.value = await Promise.all(
-      publicRepos.map(async (repo: any) => {
-        try {
-          // Prepare headers for README request
-          const readmeHeaders: HeadersInit = {
-            Accept: "application/vnd.github.v3.raw",
-          };
-          if (config.public.githubToken) {
-            readmeHeaders.Authorization = `token ${config.public.githubToken}`;
-          }
-
-          const readmeResponse = await fetch(
-            `https://api.github.com/repos/raadfxrd/${repo.name}/readme`,
-            { headers: readmeHeaders },
-          );
-
-          let readme = "";
-          let thumbnail = "";
-          let readmeTitle = "";
-          let readmeDescription = "";
-
-          if (!readmeResponse.ok && readmeResponse.status === 403) {
-            const rateLimitRemaining = readmeResponse.headers.get(
-              "X-RateLimit-Remaining",
-            );
-            if (rateLimitRemaining === "0") {
-              const rateLimitReset =
-                readmeResponse.headers.get("X-RateLimit-Reset");
-              const resetDate = rateLimitReset
-                ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString()
-                : "unknown";
-              console.error(
-                `GitHub API rate limit exceeded while fetching README for ${repo.name}. Resets at:`,
-                resetDate,
-              );
+        publicRepos.map(async (repo: any) => {
+          try {
+            // Prepare headers for README request
+            const readmeHeaders: HeadersInit = {
+              Accept: "application/vnd.github.v3.raw",
+            };
+            if (config.public.githubToken) {
+              readmeHeaders.Authorization = `token ${config.public.githubToken}`;
             }
-          }
 
-          if (readmeResponse.ok) {
-            readme = await readmeResponse.text();
+            const readmeResponse = await fetch(
+                `https://api.github.com/repos/raadfxrd/${repo.name}/readme`,
+                {headers: readmeHeaders},
+            );
 
-            const imageMatch = readme.match(/!\[.*?]\((.*?)\)/i);
-            if (imageMatch && imageMatch[1]) {
-              let imagePath = imageMatch[1];
+            let readme = "";
+            let thumbnail = "";
+            let readmeTitle = "";
+            let readmeDescription = "";
 
-              if (
-                imagePath.startsWith("http://") ||
-                imagePath.startsWith("https://")
-              ) {
-                thumbnail = imagePath;
-              } else {
-                imagePath = imagePath.replace(/^\.?\//, "");
+            if (!readmeResponse.ok && readmeResponse.status === 403) {
+              const rateLimitRemaining = readmeResponse.headers.get(
+                  "X-RateLimit-Remaining",
+              );
+              if (rateLimitRemaining === "0") {
+                const rateLimitReset =
+                    readmeResponse.headers.get("X-RateLimit-Reset");
+                const resetDate = rateLimitReset
+                    ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString()
+                    : "unknown";
+                console.error(
+                    `GitHub API rate limit exceeded while fetching README for ${repo.name}. Resets at:`,
+                    resetDate,
+                );
+              }
+            }
 
-                const branch = repo.default_branch || "main";
-                thumbnail = `https://raw.githubusercontent.com/raadfxrd/${repo.name}/${branch}/${imagePath}`;
+            if (readmeResponse.ok) {
+              readme = await readmeResponse.text();
 
-                try {
-                  const imgCheckResponse = await fetch(thumbnail, {
-                    method: "HEAD",
-                  });
-                  if (!imgCheckResponse.ok) {
-                    const alternateBranch =
-                      branch === "main" ? "master" : "main";
-                    const alternateUrl = `https://raw.githubusercontent.com/raadfxrd/${repo.name}/${alternateBranch}/${imagePath}`;
-                    const altCheckResponse = await fetch(alternateUrl, {
+              const imageMatch = readme.match(/!\[.*?]\((.*?)\)/i);
+              if (imageMatch && imageMatch[1]) {
+                let imagePath = imageMatch[1];
+
+                if (
+                    imagePath.startsWith("http://") ||
+                    imagePath.startsWith("https://")
+                ) {
+                  thumbnail = imagePath;
+                } else {
+                  imagePath = imagePath.replace(/^\.?\//, "");
+
+                  const branch = repo.default_branch || "main";
+                  thumbnail = `https://raw.githubusercontent.com/raadfxrd/${repo.name}/${branch}/${imagePath}`;
+
+                  try {
+                    const imgCheckResponse = await fetch(thumbnail, {
                       method: "HEAD",
                     });
-                    if (altCheckResponse.ok) {
-                      thumbnail = alternateUrl;
-                    } else {
-                      thumbnail = "";
+                    if (!imgCheckResponse.ok) {
+                      const alternateBranch =
+                          branch === "main" ? "master" : "main";
+                      const alternateUrl = `https://raw.githubusercontent.com/raadfxrd/${repo.name}/${alternateBranch}/${imagePath}`;
+                      const altCheckResponse = await fetch(alternateUrl, {
+                        method: "HEAD",
+                      });
+                      if (altCheckResponse.ok) {
+                        thumbnail = alternateUrl;
+                      } else {
+                        thumbnail = "";
+                      }
                     }
+                  } catch (err) {
+                    console.warn(`Could not verify image for ${repo.name}:`, err);
+                    thumbnail = "";
                   }
-                } catch (err) {
-                  console.warn(`Could not verify image for ${repo.name}:`, err);
-                  thumbnail = "";
+                }
+              }
+              const titleMatch = readme.match(/^#+\s+(.+?)$/m);
+              if (titleMatch && titleMatch[1]) {
+                readmeTitle = titleMatch[1].trim();
+              }
+              const lines = readme.split("\n");
+              let foundTitle = false;
+              for (const line of lines) {
+                if (line.match(/^#+\s+/)) {
+                  foundTitle = true;
+                  continue;
+                }
+                if (
+                    foundTitle &&
+                    line.trim() &&
+                    !line.startsWith("!") &&
+                    !line.startsWith("[") &&
+                    !line.startsWith("#")
+                ) {
+                  readmeDescription = line.trim();
+                  break;
                 }
               }
             }
-            const titleMatch = readme.match(/^#+\s+(.+?)$/m);
-            if (titleMatch && titleMatch[1]) {
-              readmeTitle = titleMatch[1].trim();
-            }
-            const lines = readme.split("\n");
-            let foundTitle = false;
-            for (const line of lines) {
-              if (line.match(/^#+\s+/)) {
-                foundTitle = true;
-                continue;
-              }
-              if (
-                foundTitle &&
-                line.trim() &&
-                !line.startsWith("!") &&
-                !line.startsWith("[") &&
-                !line.startsWith("#")
-              ) {
-                readmeDescription = line.trim();
-                break;
-              }
-            }
-          }
 
-          return {
-            id: repo.id,
-            name: repo.name,
-            description: repo.description || "No description available",
-            html_url: repo.html_url,
-            homepage: repo.homepage,
-            topics: repo.topics || [],
-            stargazers_count: repo.stargazers_count,
-            forks_count: repo.forks_count,
-            language: repo.language,
-            updated_at: repo.updated_at,
-            readme,
-            thumbnail,
-            readmeTitle,
-            readmeDescription,
-          };
-        } catch (err) {
-          console.error(`Error fetching README for ${repo.name}:`, err);
-          return {
-            id: repo.id,
-            name: repo.name,
-            description: repo.description || "No description available",
-            html_url: repo.html_url,
-            homepage: repo.homepage,
-            topics: repo.topics || [],
-            stargazers_count: repo.stargazers_count,
-            forks_count: repo.forks_count,
-            language: repo.language,
-            updated_at: repo.updated_at,
-            readme: "",
-            thumbnail: "",
-            readmeTitle: "",
-            readmeDescription: "",
-          };
-        }
-      }),
+            return {
+              id: repo.id,
+              name: repo.name,
+              description: repo.description || "No description available",
+              html_url: repo.html_url,
+              homepage: repo.homepage,
+              topics: repo.topics || [],
+              stargazers_count: repo.stargazers_count,
+              forks_count: repo.forks_count,
+              language: repo.language,
+              updated_at: repo.updated_at,
+              readme,
+              thumbnail,
+              readmeTitle,
+              readmeDescription,
+            };
+          } catch (err) {
+            console.error(`Error fetching README for ${repo.name}:`, err);
+            return {
+              id: repo.id,
+              name: repo.name,
+              description: repo.description || "No description available",
+              html_url: repo.html_url,
+              homepage: repo.homepage,
+              topics: repo.topics || [],
+              stargazers_count: repo.stargazers_count,
+              forks_count: repo.forks_count,
+              language: repo.language,
+              updated_at: repo.updated_at,
+              readme: "",
+              thumbnail: "",
+              readmeTitle: "",
+              readmeDescription: "",
+            };
+          }
+        }),
     );
   } catch (err) {
     console.error("Error fetching GitHub repos:", err);
@@ -240,9 +240,9 @@ const parseReadmeText = (text: string) => {
   try {
     const html = marked.parse(text) as string;
     let plainText = html
-      .replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
 
     plainText = decodeHtmlEntities(plainText);
 
@@ -285,7 +285,7 @@ const getInitials = (name: string) => {
     <div class="container mx-auto max-w-6xl px-4 md:px-6">
       <div class="mb-8 md:mb-12">
         <h1
-          class="gradient mb-3 w-fit pb-1 text-2xl font-bold md:mb-4 md:text-3xl lg:text-5xl"
+            class="gradient mb-3 w-fit pb-1 text-2xl font-bold md:mb-4 md:text-3xl lg:text-5xl"
         >
           Projects
         </h1>
@@ -295,58 +295,58 @@ const getInitials = (name: string) => {
       </div>
 
       <div
-        v-if="loading"
-        class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
+          v-if="loading"
+          class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
       >
         <div
-          v-for="n in skeletonCount"
-          :key="`skeleton-${n}`"
-          class="skeleton-card"
+            v-for="n in skeletonCount"
+            :key="`skeleton-${n}`"
+            class="skeleton-card"
         >
-          <div class="skeleton skeleton-thumb" />
-          <div class="skeleton skeleton-title" />
-          <div class="skeleton skeleton-line" />
-          <div class="skeleton skeleton-line short" />
+          <div class="skeleton skeleton-thumb"/>
+          <div class="skeleton skeleton-title"/>
+          <div class="skeleton skeleton-line"/>
+          <div class="skeleton skeleton-line short"/>
           <div class="skeleton-chip-row">
-            <span class="skeleton skeleton-chip" />
-            <span class="skeleton skeleton-chip" />
+            <span class="skeleton skeleton-chip"/>
+            <span class="skeleton skeleton-chip"/>
           </div>
-          <div class="skeleton skeleton-meta" />
+          <div class="skeleton skeleton-meta"/>
         </div>
       </div>
       <div
-        v-else-if="error"
-        class="flex items-center justify-center py-12 md:py-20"
+          v-else-if="error"
+          class="flex items-center justify-center py-12 md:py-20"
       >
         <div class="text-base text-red-500 md:text-lg">{{ error }}</div>
       </div>
       <div v-else class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
         <FadeInSection
-          v-for="(repo, index) in repos"
-          :key="repo.id"
-          :delay="index * 60"
-          :distance="18"
-          class="h-full"
+            v-for="(repo, index) in repos"
+            :key="repo.id"
+            :delay="index * 60"
+            :distance="18"
+            class="h-full"
         >
           <article
-            class="bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+              class="bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
           >
             <div
-              v-if="repo.thumbnail"
-              class="aspect-video w-full overflow-hidden rounded-t-lg bg-gray-800"
+                v-if="repo.thumbnail"
+                class="aspect-video w-full overflow-hidden rounded-t-lg bg-gray-800"
             >
               <img
-                :alt="`${repo.name} thumbnail`"
-                :src="repo.thumbnail"
-                class="h-full w-full object-cover"
-                @error="
+                  :alt="`${repo.name} thumbnail`"
+                  :src="repo.thumbnail"
+                  class="h-full w-full object-cover"
+                  @error="
                   (e) => ((e.target as HTMLImageElement).style.display = 'none')
                 "
               />
             </div>
             <div
-              v-else
-              class="repo-fallback text-text-primary/80 aspect-video w-full rounded-t-lg bg-linear-to-br from-blue-200 to-red-200"
+                v-else
+                class="repo-fallback text-text-primary/80 aspect-video w-full rounded-t-lg bg-linear-to-br from-blue-200 to-red-200"
             >
               <span class="repo-fallback__initials">
                 {{ getInitials(repo.name) }}
@@ -362,22 +362,22 @@ const getInitials = (name: string) => {
                 }}
               </p>
               <div
-                v-if="repo.topics.length > 0"
-                class="mb-3 flex flex-wrap gap-2"
+                  v-if="repo.topics.length > 0"
+                  class="mb-3 flex flex-wrap gap-2"
               >
                 <span
-                  v-for="topic in repo.topics.slice(0, 6)"
-                  :key="topic"
-                  class="bg-background-light-2 text-text-secondary rounded-full px-2 py-1 text-[10px] tracking-wide uppercase"
+                    v-for="topic in repo.topics.slice(0, 6)"
+                    :key="topic"
+                    class="bg-background-light-2 text-text-secondary rounded-full px-2 py-1 text-[10px] tracking-wide uppercase"
                 >
                   {{ topic }}
                 </span>
               </div>
               <div
-                class="mt-auto flex items-center justify-between border-t border-gray-700 pt-3"
+                  class="mt-auto flex items-center justify-between border-t border-gray-700 pt-3"
               >
                 <div
-                  class="flex flex-wrap items-center gap-3 text-xs text-gray-400"
+                    class="flex flex-wrap items-center gap-3 text-xs text-gray-400"
                 >
                   <span v-if="repo.language" class="flex items-center gap-1">
                     <span class="h-2 w-2 rounded-full bg-blue-500"></span>
@@ -392,20 +392,20 @@ const getInitials = (name: string) => {
                 </div>
 
                 <a
-                  :href="repo.html_url"
-                  class="text-text-primary hover:text-text-secondary text-xs transition-colors"
-                  rel="noopener noreferrer"
-                  target="_blank"
+                    :href="repo.html_url"
+                    class="text-text-primary hover:text-text-secondary text-xs transition-colors"
+                    rel="noopener noreferrer"
+                    target="_blank"
                 >
                   View on GitHub →
                 </a>
               </div>
               <a
-                v-if="repo.homepage"
-                :href="repo.homepage"
-                class="text-text-primary hover:text-text-secondary mt-2 text-xs transition-colors"
-                rel="noopener noreferrer"
-                target="_blank"
+                  v-if="repo.homepage"
+                  :href="repo.homepage"
+                  class="text-text-primary hover:text-text-secondary mt-2 text-xs transition-colors"
+                  rel="noopener noreferrer"
+                  target="_blank"
               >
                 Live Demo
               </a>
@@ -461,10 +461,10 @@ const getInitials = (name: string) => {
   position: absolute;
   inset: 0;
   background: linear-gradient(
-    120deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.35) 50%,
-    transparent 100%
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.35) 50%,
+      transparent 100%
   );
   transform: translateX(-100%);
   animation: shimmer 1.2s ease-in-out infinite;

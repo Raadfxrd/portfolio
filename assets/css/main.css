@@ -135,8 +135,38 @@ img:hover {
 }
 
 .gradient {
-    @apply bg-linear-to-r from-blue-300 to-red-200 bg-clip-text text-transparent;
+    /* Fallback for browsers that don't support background-clip */
+    color: var(--color-text-primary);
+    background: linear-gradient(to right, #93c5fd, #fecaca);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
+
+/* Backdrop blur with fallback for cross-browser compatibility */
+.backdrop-blur-fallback {
+    /* Stronger fallback background for browsers without backdrop-filter support */
+    background-color: rgba(238, 238, 238, 0.85);
+    /* Modern backdrop-filter with vendor prefix */
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+}
+
+/* For modern browsers that support backdrop-filter, use more transparency */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .backdrop-blur-fallback {
+        background-color: rgba(238, 238, 238, 0.2);
+    }
+
+    .dark .backdrop-blur-fallback {
+        background-color: rgba(51, 51, 51, 0.2);
+    }
+}
+
+.dark .backdrop-blur-fallback {
+    background-color: rgba(51, 51, 51, 0.85);
+}
+
 
 .motion-surface {
     transition: transform 0.3s var(--motion-ease),

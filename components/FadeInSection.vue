@@ -1,35 +1,35 @@
 <template>
   <div
-    ref="el"
-    :class="['motion-reveal', visible && 'motion-reveal--visible']"
-    :style="styleVars"
+      ref="el"
+      :class="['motion-reveal', visible && 'motion-reveal--visible']"
+      :style="styleVars"
   >
-    <slot />
+    <slot/>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
-import { useIntersectionObserver } from "@vueuse/core";
+import {computed, ref} from "vue";
+import {useIntersectionObserver} from "@vueuse/core";
 
 const el = ref<HTMLElement | null>(null);
 const visible = ref(false);
 
 const props = withDefaults(
-  defineProps<{
-    delay?: number;
-    distance?: number;
-    duration?: number;
-    timing?: string;
-    once?: boolean;
-  }>(),
-  {
-    delay: 0,
-    distance: 24,
-    duration: 900,
-    timing: "cubic-bezier(0.22, 1, 0.36, 1)",
-    once: true,
-  },
+    defineProps<{
+      delay?: number;
+      distance?: number;
+      duration?: number;
+      timing?: string;
+      once?: boolean;
+    }>(),
+    {
+      delay: 0,
+      distance: 24,
+      duration: 900,
+      timing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      once: true,
+    },
 );
 
 const styleVars = computed(() => ({
@@ -40,16 +40,16 @@ const styleVars = computed(() => ({
 }));
 
 useIntersectionObserver(
-  el,
-  ([{ isIntersecting }], observer) => {
-    if (isIntersecting) {
-      visible.value = true;
-      if (props.once) observer.unobserve(el.value as Element);
-    } else if (!props.once) {
-      visible.value = false;
-    }
-  },
-  { threshold: 0.14 },
+    el,
+    ([{isIntersecting}], observer) => {
+      if (isIntersecting) {
+        visible.value = true;
+        if (props.once) observer.unobserve(el.value as Element);
+      } else if (!props.once) {
+        visible.value = false;
+      }
+    },
+    {threshold: 0.14},
 );
 </script>
 
@@ -57,9 +57,8 @@ useIntersectionObserver(
 .motion-reveal {
   opacity: 0;
   transform: translateY(var(--motion-distance, 24px));
-  transition:
-    opacity var(--motion-duration, 900ms) var(--motion-ease, ease-out),
-    transform var(--motion-duration, 900ms) var(--motion-ease, ease-out);
+  transition: opacity var(--motion-duration, 900ms) var(--motion-ease, ease-out),
+  transform var(--motion-duration, 900ms) var(--motion-ease, ease-out);
   will-change: opacity, transform;
 }
 

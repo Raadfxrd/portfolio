@@ -1,25 +1,25 @@
 <script lang="ts" setup>
-import { ArrowTopRightOnSquareIcon } from "@heroicons/vue/24/outline";
+import {ArrowTopRightOnSquareIcon} from "@heroicons/vue/24/outline";
 
 useSeoMeta({
   title: "Sitemap - Borys",
   description: "Browse all pages and content on borysbabas.dev",
 });
 
-const { data: posts } = await useAsyncData(async () => {
+const {data: posts} = await useAsyncData(async () => {
   try {
     const data = await $fetch("/api/cms/posts");
     if (!data || !Array.isArray(data)) return [];
     return data
-      .filter((post: any) => post.published)
-      .map((post: any) => ({
-        ...post,
-        path: `/blog/${post.slug}`,
-      }))
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime(),
-      );
+        .filter((post: any) => post.published)
+        .map((post: any) => ({
+          ...post,
+          path: `/blog/${post.slug}`,
+        }))
+        .sort(
+            (a: any, b: any) =>
+                new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
   } catch (e) {
     console.error("Failed to load posts:", e);
     return [];
@@ -63,32 +63,32 @@ const router = useRouter();
 const routes = router.getRoutes();
 
 const mainPages = routes
-  .filter((route) => {
-    const path = route.path;
-    return (
-      pageCategories[path] === "main" &&
-      !path.includes(":") &&
-      path !== "/sitemap"
-    );
-  })
-  .map((route) => ({
-    name: pageTitles[route.path] || route.path.split("/").pop() || "Home",
-    path: route.path,
-    description: pageDescriptions[route.path] || "Explore this page",
-  }))
-  .sort((a, b) => {
-    if (a.path === "/") return -1;
-    if (b.path === "/") return 1;
-    return a.name.localeCompare(b.name);
-  });
+    .filter((route) => {
+      const path = route.path;
+      return (
+          pageCategories[path] === "main" &&
+          !path.includes(":") &&
+          path !== "/sitemap"
+      );
+    })
+    .map((route) => ({
+      name: pageTitles[route.path] || route.path.split("/").pop() || "Home",
+      path: route.path,
+      description: pageDescriptions[route.path] || "Explore this page",
+    }))
+    .sort((a, b) => {
+      if (a.path === "/") return -1;
+      if (b.path === "/") return 1;
+      return a.name.localeCompare(b.name);
+    });
 
 const legalPages = routes
-  .filter((route) => pageCategories[route.path] === "legal")
-  .map((route) => ({
-    name: pageTitles[route.path] || route.path.replace("/", ""),
-    path: route.path,
-    description: pageDescriptions[route.path] || "Legal information",
-  }));
+    .filter((route) => pageCategories[route.path] === "legal")
+    .map((route) => ({
+      name: pageTitles[route.path] || route.path.replace("/", ""),
+      path: route.path,
+      description: pageDescriptions[route.path] || "Legal information",
+    }));
 
 const externalLinks = [
   {
@@ -112,12 +112,12 @@ const externalLinks = [
 <template>
   <div class="relative w-full">
     <section
-      class="container mx-auto min-h-screen px-4 pt-20 pb-12 md:px-6 md:pt-30 md:pb-20"
+        class="container mx-auto min-h-screen px-4 pt-20 pb-12 md:px-6 md:pt-30 md:pb-20"
     >
       <div class="mx-auto max-w-5xl">
         <div class="mb-8 md:mb-12">
           <h1
-            class="gradient w-fit pb-3 text-3xl font-bold md:mb-4 md:text-4xl lg:text-5xl"
+              class="gradient w-fit pb-3 text-3xl font-bold md:mb-4 md:text-4xl lg:text-5xl"
           >
             Sitemap
           </h1>
@@ -129,24 +129,24 @@ const externalLinks = [
         <div class="space-y-8 md:space-y-12">
           <section>
             <h2
-              class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
+                class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
             >
               Main Pages
             </h2>
             <div class="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
               <NuxtLink
-                v-for="page in mainPages"
-                :key="page.path"
-                :to="page.path"
-                class="bg-background-light hover:bg-background-light-2 hover:border-button-primary group block rounded-lg border border-transparent p-4 transition-all duration-300 md:p-5"
+                  v-for="page in mainPages"
+                  :key="page.path"
+                  :to="page.path"
+                  class="bg-background-light hover:bg-background-light-2 hover:border-button-primary group block rounded-lg border border-transparent p-4 transition-all duration-300 md:p-5"
               >
                 <h3
-                  class="text-text-secondary group-hover:text-text-primary mb-1.5 text-base font-semibold transition-colors md:mb-2 md:text-lg"
+                    class="text-text-secondary group-hover:text-text-primary mb-1.5 text-base font-semibold transition-colors md:mb-2 md:text-lg"
                 >
                   {{ page.name }}
                 </h3>
                 <p
-                  class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
+                    class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
                 >
                   {{ page.description }}
                 </p>
@@ -156,31 +156,31 @@ const externalLinks = [
 
           <section v-if="posts && posts.length > 0">
             <h2
-              class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
+                class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
             >
               Blog Posts ({{ posts.length }})
             </h2>
             <div class="bg-background-light rounded-lg p-4 md:p-6">
               <div class="space-y-2 md:space-y-3">
                 <NuxtLink
-                  v-for="post in posts"
-                  :key="post.path"
-                  :to="post.path"
-                  class="hover:bg-background-light-2 group flex items-center justify-between rounded-lg p-2 transition-all duration-200 md:p-3"
+                    v-for="post in posts"
+                    :key="post.path"
+                    :to="post.path"
+                    class="hover:bg-background-light-2 group flex items-center justify-between rounded-lg p-2 transition-all duration-200 md:p-3"
                 >
                   <div class="flex-1">
                     <h3
-                      class="text-text-secondary group-hover:text-text-primary mb-0.5 text-sm font-medium transition-colors md:mb-1 md:text-base"
+                        class="text-text-secondary group-hover:text-text-primary mb-0.5 text-sm font-medium transition-colors md:mb-1 md:text-base"
                     >
                       {{ post.title }}
                     </h3>
                     <p
-                      class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
+                        class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
                     >
                       {{ post.description }}
                     </p>
                     <p
-                      class="text-text-secondary group-hover:text-text-primary mt-0.5 text-xs transition-colors md:mt-1"
+                        class="text-text-secondary group-hover:text-text-primary mt-0.5 text-xs transition-colors md:mt-1"
                     >
                       {{
                         new Date(post.date).toLocaleDateString("en-NL", {
@@ -192,7 +192,7 @@ const externalLinks = [
                     </p>
                   </div>
                   <ArrowTopRightOnSquareIcon
-                    class="text-text-secondary group-hover:text-text-primary ml-3 h-4 w-4 shrink-0 transition-colors md:ml-4 md:h-5 md:w-5"
+                      class="text-text-secondary group-hover:text-text-primary ml-3 h-4 w-4 shrink-0 transition-colors md:ml-4 md:h-5 md:w-5"
                   />
                 </NuxtLink>
               </div>
@@ -201,33 +201,33 @@ const externalLinks = [
 
           <section>
             <h2
-              class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
+                class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
             >
               External Links
             </h2>
             <div class="grid gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3">
               <a
-                v-for="link in externalLinks"
-                :key="link.url"
-                :href="link.url"
-                class="bg-background-light hover:bg-background-light-2 hover:border-button-primary group flex items-start justify-between rounded-lg border border-transparent p-4 transition-all duration-300 md:p-5"
-                rel="noopener noreferrer"
-                target="_blank"
+                  v-for="link in externalLinks"
+                  :key="link.url"
+                  :href="link.url"
+                  class="bg-background-light hover:bg-background-light-2 hover:border-button-primary group flex items-start justify-between rounded-lg border border-transparent p-4 transition-all duration-300 md:p-5"
+                  rel="noopener noreferrer"
+                  target="_blank"
               >
                 <div class="flex-1">
                   <h3
-                    class="text-text-secondary group-hover:text-text-primary mb-1.5 text-base font-semibold transition-colors md:mb-2 md:text-lg"
+                      class="text-text-secondary group-hover:text-text-primary mb-1.5 text-base font-semibold transition-colors md:mb-2 md:text-lg"
                   >
                     {{ link.name }}
                   </h3>
                   <p
-                    class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
+                      class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
                   >
                     {{ link.description }}
                   </p>
                 </div>
                 <ArrowTopRightOnSquareIcon
-                  class="text-text-secondary group-hover:text-text-primary ml-2 h-4 w-4 shrink-0 transition-colors md:ml-3 md:h-5 md:w-5"
+                    class="text-text-secondary group-hover:text-text-primary ml-2 h-4 w-4 shrink-0 transition-colors md:ml-3 md:h-5 md:w-5"
                 />
               </a>
             </div>
@@ -235,24 +235,24 @@ const externalLinks = [
 
           <section>
             <h2
-              class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
+                class="text-text-primary mb-4 w-fit text-xl font-semibold md:mb-6 md:text-2xl"
             >
               Legal & Policies
             </h2>
             <div class="grid gap-3 sm:grid-cols-2 md:gap-4">
               <NuxtLink
-                v-for="page in legalPages"
-                :key="page.path"
-                :to="page.path"
-                class="bg-background-light hover:bg-background-light-2 hover:border-button-primary group block rounded-lg border border-transparent p-4 transition-all duration-300 md:p-5"
+                  v-for="page in legalPages"
+                  :key="page.path"
+                  :to="page.path"
+                  class="bg-background-light hover:bg-background-light-2 hover:border-button-primary group block rounded-lg border border-transparent p-4 transition-all duration-300 md:p-5"
               >
                 <h3
-                  class="text-text-secondary group-hover:text-text-primary mb-1.5 text-base font-semibold transition-colors md:mb-2 md:text-lg"
+                    class="text-text-secondary group-hover:text-text-primary mb-1.5 text-base font-semibold transition-colors md:mb-2 md:text-lg"
                 >
                   {{ page.name }}
                 </h3>
                 <p
-                  class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
+                    class="text-text-secondary group-hover:text-text-primary text-xs transition-colors md:text-sm"
                 >
                   {{ page.description }}
                 </p>

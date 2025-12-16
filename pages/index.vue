@@ -39,9 +39,9 @@
             alt="Portrait of Borys"
           />
           <!-- Text Section -->
-          <div class="gradient max-w-lg text-center md:text-left">
+          <div class="max-w-lg text-center md:text-left">
             <h1
-              class="mb-2 flex flex-wrap justify-center gap-2 text-xl font-bold sm:text-2xl md:justify-start md:text-3xl"
+              class="gradient mb-2 flex flex-wrap justify-center gap-2 text-xl font-bold sm:text-2xl md:justify-start md:text-3xl"
             >
               <span
                 v-for="(word, wi) in greeting.split(' ')"
@@ -61,7 +61,7 @@
             </h1>
 
             <h1
-              class="animate-textReveal mb-3 text-xl font-bold delay-150 sm:text-2xl md:text-3xl"
+              class="gradient animate-textReveal mb-3 text-xl font-bold delay-150 sm:text-2xl md:text-3xl"
             >
               I'm Borys!
             </h1>
