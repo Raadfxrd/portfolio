@@ -44,7 +44,11 @@
 <script setup>
 import NavLinks from "./NavLinks.vue";
 import { useNavbarVisibility } from "~/composables/useNavbarVisibility";
-import { ComputerDesktopIcon, MoonIcon, SunIcon } from "@heroicons/vue/24/outline";
+import {
+  ComputerDesktopIcon,
+  MoonIcon,
+  SunIcon,
+} from "@heroicons/vue/24/outline";
 import { computed } from "vue";
 
 const { isNavbarVisible, isAnimationComplete } = useNavbarVisibility();
