@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import {onMounted, onUnmounted, ref} from "vue";
 import {marked} from "marked";
+import {ArrowTopRightOnSquareIcon, CalendarIcon, CodeBracketIcon, StarIcon,} from "@heroicons/vue/24/outline";
+import {StarIcon as StarIconSolid} from "@heroicons/vue/24/solid";
 
 interface Repository {
   id: number;
@@ -20,6 +22,7 @@ interface Repository {
 }
 
 const repos = ref<Repository[]>([]);
+const featuredRepo = ref<Repository | null>(null);
 const loading = ref(true);
 const error = ref<string | null>(null);
 const config = useRuntimeConfig();
@@ -76,7 +79,7 @@ const fetchGitHubRepos = async () => {
 
     const publicRepos = reposData.filter((repo: any) => !repo.fork);
 
-    repos.value = await Promise.all(
+    const allRepos = await Promise.all(
         publicRepos.map(async (repo: any) => {
           try {
             // Prepare headers for README request
@@ -161,6 +164,7 @@ const fetchGitHubRepos = async () => {
               }
               const lines = readme.split("\n");
               let foundTitle = false;
+              const descriptionLines: string[] = [];
               for (const line of lines) {
                 if (line.match(/^#+\s+/)) {
                   foundTitle = true;
@@ -173,10 +177,14 @@ const fetchGitHubRepos = async () => {
                     !line.startsWith("[") &&
                     !line.startsWith("#")
                 ) {
-                  readmeDescription = line.trim();
-                  break;
+                  descriptionLines.push(line.trim());
+                  // Collect up to 10 lines of description
+                  if (descriptionLines.length >= 10) {
+                    break;
+                  }
                 }
               }
+              readmeDescription = descriptionLines.join(" ");
             }
 
             return {
@@ -216,6 +224,17 @@ const fetchGitHubRepos = async () => {
           }
         }),
     );
+
+    // Separate the featured repo from regular repos
+    const raadfxrdIndex = allRepos.findIndex(
+        (repo) => repo.name === "raadfxrd",
+    );
+    if (raadfxrdIndex !== -1) {
+      featuredRepo.value = allRepos[raadfxrdIndex];
+      repos.value = allRepos.filter((_, index) => index !== raadfxrdIndex);
+    } else {
+      repos.value = allRepos;
+    }
   } catch (err) {
     console.error("Error fetching GitHub repos:", err);
     error.value = "Failed to load projects. Please try again later.";
@@ -320,98 +339,245 @@ const getInitials = (name: string) => {
       >
         <div class="text-base text-red-500 md:text-lg">{{ error }}</div>
       </div>
-      <div v-else class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
+      <div v-else>
+        <!-- Featured Repository -->
         <FadeInSection
-            v-for="(repo, index) in repos"
-            :key="repo.id"
-            :delay="index * 60"
-            :distance="18"
-            class="h-full"
+            v-if="featuredRepo"
+            :delay="0"
+            :distance="24"
+            class="mb-8 md:mb-12"
         >
           <article
-              class="bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+              class="featured-repo bg-background-light border-border-light relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl"
           >
-            <div
-                v-if="repo.thumbnail"
-                class="aspect-video w-full overflow-hidden rounded-t-lg bg-gray-800"
-            >
-              <img
-                  :alt="`${repo.name} thumbnail`"
-                  :src="repo.thumbnail"
-                  class="h-full w-full object-cover"
-                  @error="
-                  (e) => ((e.target as HTMLImageElement).style.display = 'none')
-                "
-              />
-            </div>
-            <div
-                v-else
-                class="repo-fallback text-text-primary/80 aspect-video w-full rounded-t-lg bg-linear-to-br from-blue-200 to-red-200"
-            >
-              <span class="repo-fallback__initials">
-                {{ getInitials(repo.name) }}
+            <div class="absolute top-4 right-4 z-10">
+              <span class="featured-badge">
+                <StarIconSolid class="mr-1 inline-block h-4 w-4"/>
+                Featured
               </span>
             </div>
-            <div class="flex flex-1 flex-col p-4">
-              <h3 class="text-text-primary mb-2 w-fit text-lg font-semibold">
-                {{ parseReadmeText(repo.readmeTitle || repo.name) }}
-              </h3>
-              <p class="text-text-secondary mb-3 line-clamp-3 text-sm">
-                {{
-                  parseReadmeText(repo.readmeDescription || repo.description)
-                }}
-              </p>
-              <div
-                  v-if="repo.topics.length > 0"
-                  class="mb-3 flex flex-wrap gap-2"
-              >
-                <span
-                    v-for="topic in repo.topics.slice(0, 6)"
-                    :key="topic"
-                    class="bg-background-light-2 text-text-secondary rounded-full px-2 py-1 text-[10px] tracking-wide uppercase"
-                >
-                  {{ topic }}
-                </span>
+
+            <div class="grid gap-6 md:grid-cols-2">
+              <!-- Image Section -->
+              <div class="relative overflow-hidden md:rounded-l-2xl">
+                <div v-if="featuredRepo.thumbnail" class="featured-thumbnail">
+                  <img
+                      :alt="`${featuredRepo.name} thumbnail`"
+                      :src="featuredRepo.thumbnail"
+                      class="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                      @error="
+                      (e) =>
+                        ((e.target as HTMLImageElement).style.display = 'none')
+                    "
+                  />
+                </div>
+                <div v-else class="featured-fallback">
+                  <span class="featured-fallback__initials">
+                    {{ getInitials(featuredRepo.name) }}
+                  </span>
+                </div>
               </div>
-              <div
-                  class="mt-auto flex items-center justify-between border-t border-gray-700 pt-3"
-              >
-                <div
-                    class="flex flex-wrap items-center gap-3 text-xs text-gray-400"
+
+              <!-- Content Section -->
+              <div class="flex flex-col justify-center p-6 md:p-8">
+                <h2
+                    class="gradient mb-4 w-fit text-2xl font-bold md:text-3xl lg:text-4xl"
                 >
-                  <span v-if="repo.language" class="flex items-center gap-1">
-                    <span class="h-2 w-2 rounded-full bg-blue-500"></span>
-                    {{ repo.language }}
-                  </span>
-                  <span class="flex items-center gap-1">
-                    ⭐ {{ repo.stargazers_count }}
-                  </span>
-                  <span v-if="repo.updated_at" class="flex items-center gap-1">
-                    · {{ formatDate(repo.updated_at) }}
+                  {{
+                    parseReadmeText(
+                        featuredRepo.readmeTitle || featuredRepo.name,
+                    )
+                  }}
+                </h2>
+                <p
+                    class="text-text-secondary mb-6 text-base leading-relaxed md:text-lg"
+                    style="
+                    display: -webkit-box;
+                    -webkit-line-clamp: 8;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                  "
+                >
+                  {{
+                    parseReadmeText(
+                        featuredRepo.readmeDescription ||
+                        featuredRepo.description,
+                    )
+                  }}
+                </p>
+
+                <div
+                    v-if="featuredRepo.topics.length > 0"
+                    class="mb-6 flex flex-wrap gap-2"
+                >
+                  <span
+                      v-for="topic in featuredRepo.topics"
+                      :key="topic"
+                      class="featured-topic"
+                  >
+                    {{ topic }}
                   </span>
                 </div>
 
-                <a
-                    :href="repo.html_url"
-                    class="text-text-primary hover:text-text-secondary text-xs transition-colors"
-                    rel="noopener noreferrer"
-                    target="_blank"
+                <div
+                    class="mb-6 flex flex-wrap items-center gap-4 text-sm text-gray-400"
                 >
-                  View on GitHub →
-                </a>
+                  <span
+                      v-if="featuredRepo.language"
+                      class="flex items-center gap-2"
+                  >
+                    <span class="h-3 w-3 rounded-full bg-blue-500"></span>
+                    {{ featuredRepo.language }}
+                  </span>
+                  <span class="flex items-center gap-2">
+                    <StarIcon class="h-4 w-4"/>
+                    {{ featuredRepo.stargazers_count }} stars
+                  </span>
+                  <span
+                      v-if="featuredRepo.forks_count"
+                      class="flex items-center gap-2"
+                  >
+                    <CodeBracketIcon class="h-4 w-4"/>
+                    {{ featuredRepo.forks_count }} forks
+                  </span>
+                  <span
+                      v-if="featuredRepo.updated_at"
+                      class="flex items-center gap-2"
+                  >
+                    <CalendarIcon class="h-4 w-4"/>
+                    {{ formatDate(featuredRepo.updated_at) }}
+                  </span>
+                </div>
+
+                <div class="flex flex-wrap gap-3">
+                  <a
+                      :href="featuredRepo.html_url"
+                      class="featured-button featured-button-primary"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                  >
+                    <span>View on GitHub</span>
+                    <ArrowTopRightOnSquareIcon
+                        class="ml-1 inline-block h-4 w-4"
+                    />
+                  </a>
+                  <a
+                      v-if="featuredRepo.homepage"
+                      :href="featuredRepo.homepage"
+                      class="featured-button featured-button-secondary"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                  >
+                    <span>Live Demo</span>
+                    <ArrowTopRightOnSquareIcon
+                        class="ml-1 inline-block h-4 w-4"
+                    />
+                  </a>
+                </div>
               </div>
-              <a
-                  v-if="repo.homepage"
-                  :href="repo.homepage"
-                  class="text-text-primary hover:text-text-secondary mt-2 text-xs transition-colors"
-                  rel="noopener noreferrer"
-                  target="_blank"
-              >
-                Live Demo
-              </a>
             </div>
           </article>
         </FadeInSection>
+
+        <!-- Regular Repositories Grid -->
+        <div class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
+          <FadeInSection
+              v-for="(repo, index) in repos"
+              :key="repo.id"
+              :delay="index * 60"
+              :distance="18"
+              class="h-full"
+          >
+            <article
+                class="bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div
+                  v-if="repo.thumbnail"
+                  class="aspect-video w-full overflow-hidden rounded-t-lg bg-gray-800"
+              >
+                <img
+                    :alt="`${repo.name} thumbnail`"
+                    :src="repo.thumbnail"
+                    class="h-full w-full object-cover"
+                    @error="
+                    (e) =>
+                      ((e.target as HTMLImageElement).style.display = 'none')
+                  "
+                />
+              </div>
+              <div
+                  v-else
+                  class="repo-fallback text-text-primary/80 aspect-video w-full rounded-t-lg bg-linear-to-br from-blue-200 to-red-200"
+              >
+                <span class="repo-fallback__initials">
+                  {{ getInitials(repo.name) }}
+                </span>
+              </div>
+              <div class="flex flex-1 flex-col p-4">
+                <h3 class="text-text-primary mb-2 w-fit text-lg font-semibold">
+                  {{ parseReadmeText(repo.readmeTitle || repo.name) }}
+                </h3>
+                <p class="text-text-secondary mb-3 line-clamp-3 text-sm">
+                  {{
+                    parseReadmeText(repo.readmeDescription || repo.description)
+                  }}
+                </p>
+                <div
+                    v-if="repo.topics.length > 0"
+                    class="mb-3 flex flex-wrap gap-2"
+                >
+                  <span
+                      v-for="topic in repo.topics.slice(0, 6)"
+                      :key="topic"
+                      class="bg-background-light-2 text-text-secondary rounded-full px-2 py-1 text-[10px] tracking-wide uppercase"
+                  >
+                    {{ topic }}
+                  </span>
+                </div>
+                <div
+                    class="mt-auto flex items-center justify-between border-t border-gray-700 pt-3"
+                >
+                  <div
+                      class="flex flex-wrap items-center gap-3 text-xs text-gray-400"
+                  >
+                    <span v-if="repo.language" class="flex items-center gap-1">
+                      <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                      {{ repo.language }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                      <StarIcon class="h-3 w-3"/>
+                      {{ repo.stargazers_count }}
+                    </span>
+                    <span
+                        v-if="repo.updated_at"
+                        class="flex items-center gap-1"
+                    >
+                      · {{ formatDate(repo.updated_at) }}
+                    </span>
+                  </div>
+
+                  <a
+                      :href="repo.html_url"
+                      class="text-text-primary hover:text-text-secondary text-xs transition-colors"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                  >
+                    View on GitHub →
+                  </a>
+                </div>
+                <a
+                    v-if="repo.homepage"
+                    :href="repo.homepage"
+                    class="text-text-primary hover:text-text-secondary mt-2 text-xs transition-colors"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                >
+                  Live Demo
+                </a>
+              </div>
+            </article>
+          </FadeInSection>
+        </div>
       </div>
     </div>
   </div>
@@ -512,5 +678,145 @@ const getInitials = (name: string) => {
   100% {
     transform: translateX(100%);
   }
+}
+
+.featured-repo {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.featured-repo:hover {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.featured-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+.featured-thumbnail {
+  height: 100%;
+  min-height: 300px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.featured-fallback {
+  height: 100%;
+  min-height: 300px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.featured-fallback::before {
+  content: "";
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+      45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 70%
+  );
+  animation: shine 3s ease-in-out infinite;
+}
+
+@keyframes shine {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+.featured-fallback__initials {
+  font-weight: 900;
+  font-size: 4rem;
+  color: white;
+  letter-spacing: 0.1em;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.featured-topic {
+  background: linear-gradient(
+      135deg,
+      rgba(102, 126, 234, 0.2) 0%,
+      rgba(118, 75, 162, 0.2) 100%
+  );
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  color: var(--color-text-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.featured-topic:hover {
+  background: linear-gradient(
+      135deg,
+      rgba(102, 126, 234, 0.3) 0%,
+      rgba(118, 75, 162, 0.3) 100%
+  );
+  transform: translateY(-2px);
+}
+
+.featured-button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.featured-button-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.featured-button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.featured-button-secondary {
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 2px solid var(--border-light);
+}
+
+.featured-button-secondary:hover {
+  background: var(--color-background-light-2);
+  border-color: rgba(102, 126, 234, 0.5);
+  transform: translateY(-2px);
 }
 </style>

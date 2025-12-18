@@ -134,20 +134,39 @@ img:hover {
     @apply text-text-secondary hover:text-text-primary transition-colors duration-200 ease-out;
 }
 
+/* Fallback for browsers that don't support background-clip */
 .gradient {
-    /* Fallback for browsers that don't support background-clip */
     color: var(--color-text-primary);
     background: linear-gradient(to right, #93c5fd, #fecaca);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: opacity;
+}
+
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .gradient {
+        background: linear-gradient(to right, #93c5fd, #fecaca);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+}
+
+/* Fallback for browsers that don't support background-clip properly */
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+    .gradient {
+        color: var(--color-text-primary);
+        -webkit-text-fill-color: unset;
+    }
 }
 
 /* Backdrop blur with fallback for cross-browser compatibility */
 .backdrop-blur-fallback {
-    /* Stronger fallback background for browsers without backdrop-filter support */
     background-color: rgba(238, 238, 238, 0.85);
-    /* Modern backdrop-filter with vendor prefix */
     -webkit-backdrop-filter: blur(16px);
     backdrop-filter: blur(16px);
 }

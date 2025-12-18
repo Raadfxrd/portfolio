@@ -127,7 +127,7 @@
           </section>
 
           <!-- Sidebar Section -->
-          <aside class="w-full lg:sticky lg:top-25 lg:max-h-screen lg:w-2/5">
+          <aside class="w-full lg:w-2/5">
             <div class="space-y-4">
               <FadeInSection :delay="120" :distance="18">
                 <SubscriptionForm />
@@ -147,16 +147,16 @@
 </template>
 
 <script lang="ts" setup>
-import { ArrowRightIcon } from "@heroicons/vue/24/outline";
+import {ArrowRightIcon} from "@heroicons/vue/24/outline";
 import TechStack from "~/components/TechStack.vue";
 import PostCard from "~/components/PostCard.vue";
 import SubscriptionForm from "~/components/SubscriptionForm.vue";
 import WorkExperience from "~/components/WorkExperience.vue";
 import EducationTrajectory from "~/components/EducationTrajectory.vue";
 import FadeInSection from "~/components/FadeInSection.vue";
-import { useIntroSequence } from "~/composables/useIntroSequence";
-import { useRotatingTitles } from "~/composables/useRotatingTitles";
-import { useGreeting } from "~/composables/useGreeting";
+import {useIntroSequence} from "~/composables/useIntroSequence";
+import {useRotatingTitles} from "~/composables/useRotatingTitles";
+import {useGreeting} from "~/composables/useGreeting";
 
 const { greeting } = useGreeting();
 const { currentTitle, isFadingOut } = useRotatingTitles();
