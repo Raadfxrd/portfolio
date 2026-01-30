@@ -7,10 +7,10 @@
     </h2>
     <div class="space-y-3 md:space-y-4">
       <div
-        v-for="(education, index) in educations"
-        :key="education.degree"
-        class="group hover:bg-background-light-2/90 hover-lift cursor-hover flex cursor-pointer items-start gap-2 rounded-lg p-1.5 transition-all duration-200 md:gap-3 md:p-2"
-        @click="openModal(index)"
+          v-for="(education, index) in educations"
+          :key="education.degree"
+          class="group hover:bg-background-light-2/90 hover-lift cursor-hover flex cursor-pointer items-start gap-2 rounded-lg p-1.5 transition-all duration-200 md:gap-3 md:p-2"
+          @click="openModal(index)"
       >
         <div
             class="flex h-8 w-8 shrink-0 items-center justify-center md:h-10 md:w-10"

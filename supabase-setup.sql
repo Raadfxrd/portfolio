@@ -6,79 +6,55 @@
 CREATE TABLE IF NOT EXISTS users
 (
     id
-    SERIAL
-    PRIMARY
-    KEY,
+               SERIAL
+        PRIMARY
+            KEY,
     username
-    VARCHAR
-(
-    255
-) NOT NULL UNIQUE,
-    password VARCHAR
-(
-    255
-) NOT NULL,
-    email VARCHAR
-(
-    255
-) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW
-(
-)
-    );
+               VARCHAR(255) NOT NULL UNIQUE,
+    password   VARCHAR(255) NOT NULL,
+    email      VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP    NOT NULL DEFAULT NOW
+                                             (
+                                             )
+);
 
 -- Create blog_posts table
 CREATE TABLE IF NOT EXISTS blog_posts
 (
     id
-    SERIAL
-    PRIMARY
-    KEY,
+                SERIAL
+        PRIMARY
+            KEY,
     slug
-    VARCHAR
-(
-    255
-) NOT NULL UNIQUE,
-    title VARCHAR
-(
-    255
-) NOT NULL,
-    description TEXT NOT NULL,
-    content TEXT NOT NULL,
-    author VARCHAR
-(
-    255
-) NOT NULL,
-    date VARCHAR
-(
-    10
-) NOT NULL,
-    published BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW
-(
-),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW
-(
-)
-    );
+                VARCHAR(255) NOT NULL UNIQUE,
+    title       VARCHAR(255) NOT NULL,
+    description TEXT         NOT NULL,
+    content     TEXT         NOT NULL,
+    author      VARCHAR(255) NOT NULL,
+    date        VARCHAR(10)  NOT NULL,
+    published   BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMP    NOT NULL DEFAULT NOW
+                                              (
+                                              ),
+    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW
+                                              (
+                                              )
+);
 
 -- Create newsletter table
 CREATE TABLE IF NOT EXISTS newsletter
 (
     id
-    SERIAL
-    PRIMARY
-    KEY,
+                  SERIAL
+        PRIMARY
+            KEY,
     email
-    VARCHAR
-(
-    255
-) NOT NULL UNIQUE,
-    subscribed_at TIMESTAMP NOT NULL DEFAULT NOW
-(
-),
-    active BOOLEAN NOT NULL DEFAULT TRUE
-    );
+                  VARCHAR(255) NOT NULL UNIQUE,
+    subscribed_at TIMESTAMP    NOT NULL DEFAULT NOW
+                                                (
+                                                ),
+    active        BOOLEAN      NOT NULL DEFAULT TRUE
+);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts (slug);
@@ -120,7 +96,8 @@ POLICY "authenticated_can_manage_posts"
     FOR ALL
     TO authenticated
     USING (true)
-    WITH CHECK (true);
+    WITH
+CHECK (true);
 
 -- Newsletter: Only authenticated users can manage
 CREATE
@@ -129,7 +106,8 @@ POLICY "authenticated_can_manage_newsletter"
     FOR ALL
     TO authenticated
     USING (true)
-    WITH CHECK (true);
+    WITH
+CHECK (true);
 
 -- Users: Only authenticated users can read users
 CREATE
@@ -141,14 +119,13 @@ SELECT
     USING (true);
 
 -- Create a function to update the updated_at timestamp
-CREATE
-OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION update_updated_at_column()
     RETURNS TRIGGER AS
 $$
 BEGIN
     NEW.updated_at
-= NOW();
-RETURN NEW;
+        = NOW();
+    RETURN NEW;
 END;
 $$
 language 'plpgsql';
