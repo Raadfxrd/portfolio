@@ -21,11 +21,11 @@
     "db:migration:admin:full": "npm run db:migration:admin && npm run db:migration:apply",
     "db:fix-sequences": "tsx scripts/fix-sequences.ts",
     "test:resend": "tsx scripts/test-resend.ts",
-    "supabase:init": "tsx scripts/init-supabase.ts"
+    "supabase": "2.76.17"
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
-    "@nuxt/content": "^3.9.0",
+    "@nuxt/content": "3.11.0",
     "@nuxtjs/color-mode": "^4.0.0",
     "@supabase/supabase-js": "^2.87.1",
     "@tailwindcss/typography": "^0.5.16",
@@ -49,7 +49,7 @@
     "nodemailer": "^7.0.11",
     "nuxt": "4.2.1",
     "postgres": "^3.4.7",
-    "resend": "^6.6.0",
+    "resend": "6.9.2",
     "supabase": "^2.66.0",
     "tailwindcss": "^4.0.15",
     "unimport": "^5.5.0",
