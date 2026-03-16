@@ -66,7 +66,7 @@ export default defineNuxtConfig({
         smtpHost: process.env.SMTP_HOST || "127.0.0.1",
         smtpPort: parseInt(process.env.SMTP_PORT || "2525"),
         smtpFrom: process.env.SMTP_FROM || "noreply@borysbabas.dev",
-        contactEmail: process.env.CONTACT_EMAIL || "borysbabas@pm.me",
+        contactEmail: process.env.CONTACT_EMAIL || "info@borysbabas.dev",
 
         // Public keys (exposed to client)
         public: {
