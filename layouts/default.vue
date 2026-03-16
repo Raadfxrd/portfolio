@@ -26,12 +26,14 @@
       </div>
     </div>
     <div ref="cursor" :class="['cursor', cursorType]"/>
+    <SpeedInsights />
   </div>
 </template>
 
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, ref, watch} from "vue";
 import {useRoute} from "vue-router";
+import {SpeedInsights} from "@vercel/speed-insights/vue";
 
 const route = useRoute();
 
