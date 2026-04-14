@@ -275,10 +275,34 @@
               </div>
 
               <div>
-                <label
-                    class="text-text-primary mb-2 block text-sm font-semibold"
-                >Content (Markdown)</label
-                >
+                <div class="mb-2 flex items-center justify-between gap-3">
+                  <label class="text-text-primary block text-sm font-semibold"
+                  >Content (Markdown)</label
+                  >
+                  <div class="flex items-center gap-2">
+                    <span class="text-text-secondary text-xs">
+                      {{ hasNasStorage ? "NAS" : "Supabase" }} storage
+                    </span>
+                    <input
+                        ref="fileInput"
+                        accept="image/*"
+                        class="hidden"
+                        type="file"
+                        @change="handleFileUpload"
+                    />
+                    <button
+                        :disabled="isUploadingImage"
+                        class="border-border-light bg-background-dark text-text-primary hover:border-text-primary disabled:text-text-secondary rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed"
+                        type="button"
+                        @click="triggerFileUpload"
+                    >
+                      {{ isUploadingImage ? "Uploading..." : "Upload image" }}
+                    </button>
+                  </div>
+                </div>
+                <p v-if="uploadedFileName" class="text-text-secondary mb-2 text-xs">
+                  Last upload: {{ uploadedFileName }}
+                </p>
                 <div
                     v-if="editingPost && !modalReady"
                     class="bg-background-dark text-text-secondary border-border-light flex h-[400px] items-center justify-center rounded-lg border-2"
@@ -344,6 +368,7 @@
 
 <script lang="ts" setup>
 import NotificationContainer from "~/components/NotificationContainer.vue";
+import {isNasSharePath, normalizeNasBaseUrl, useNasStorage,} from "~/composables/useNasStorage";
 import {useNotification} from "~/composables/useNotification";
 import {PlusIcon} from "@heroicons/vue/24/outline";
 
@@ -353,12 +378,24 @@ definePageMeta({
 });
 
 const {success, error, warning} = useNotification();
+const config = useRuntimeConfig();
+const {supabase} = useSupabase();
+const {uploadFile} = useNasStorage();
 
 const posts = ref<any[]>([]);
 const loading = ref(true);
 const showCreateModal = ref(false);
 const editingPost = ref<any>(null);
 const modalReady = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
+const uploadedFileName = ref<string | null>(null);
+const isUploadingImage = ref(false);
+const rawNasBaseUrl = computed(() => String(config.public.nasBaseUrl || "").trim());
+const isNasShareMode = computed(() => isNasSharePath(rawNasBaseUrl.value));
+const nasBaseUrl = computed(() =>
+    isNasShareMode.value ? "" : normalizeNasBaseUrl(rawNasBaseUrl.value),
+);
+const hasNasStorage = computed(() => Boolean(rawNasBaseUrl.value));
 const formData = ref({
   title: "",
   slug: "",
@@ -372,6 +409,120 @@ const formData = ref({
 onMounted(async () => {
   await loadPosts();
 });
+
+const getSafeFileName = (name: string) =>
+    name
+        .toLowerCase()
+        .replace(/[^a-z0-9.-]/g, "-")
+        .replace(/-+/g, "-");
+
+const triggerFileUpload = () => {
+  if (isUploadingImage.value) {
+    warning("An upload is already in progress");
+    return;
+  }
+
+  fileInput.value?.click();
+};
+
+const uploadImageToNas = async (file: File) => {
+  const response = await uploadFile(file);
+  const baseUrl = nasBaseUrl.value;
+
+  if (response.url) {
+    const resolvedUrl = String(response.url).trim();
+    if (resolvedUrl.startsWith("/")) return resolvedUrl;
+    if (/^https?:\/\//i.test(resolvedUrl)) return resolvedUrl;
+    return `${baseUrl}/${resolvedUrl.replace(/^\/+/, "")}`;
+  }
+
+  if (response.filename) {
+    if (isNasShareMode.value) {
+      return `/api/cms/nas/file/${encodeURIComponent(String(response.filename))}`;
+    }
+    return `${baseUrl}/download/${response.filename}`;
+  }
+
+  if (response.path) {
+    if (isNasShareMode.value) {
+      return `/api/cms/nas/file/${encodeURIComponent(String(response.path))}`;
+    }
+    return `${baseUrl}/${String(response.path).replace(/^\/+/, "")}`;
+  }
+
+  throw new Error("NAS upload succeeded but no public file URL was returned");
+};
+
+const uploadImageToSupabase = async (file: File) => {
+  const bucketName = "blog-images";
+  const postSlug = formData.value.slug || editingPost.value?.slug || "draft";
+  const path = `cms/${postSlug}/${Date.now()}-${getSafeFileName(file.name)}`;
+
+  const {error: uploadError} = await supabase.storage
+      .from(bucketName)
+      .upload(path, file, {
+        cacheControl: "3600",
+        contentType: file.type,
+        upsert: true,
+      });
+
+  if (uploadError) throw uploadError;
+
+  const {data} = supabase.storage.from(bucketName).getPublicUrl(path);
+  return data.publicUrl;
+};
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    error("Please upload a valid image file (PNG, JPG, WEBP, etc.)");
+    target.value = "";
+    return;
+  }
+
+  const maxSizeInBytes = 10 * 1024 * 1024;
+  if (file.size > maxSizeInBytes) {
+    error("Image is too large. Maximum allowed size is 10MB.");
+    target.value = "";
+    return;
+  }
+
+  if (isUploadingImage.value) {
+    warning("An upload is already in progress");
+    target.value = "";
+    return;
+  }
+
+  uploadedFileName.value = file.name;
+
+  try {
+    isUploadingImage.value = true;
+    success("Uploading image...");
+
+    const imageUrl = hasNasStorage.value
+        ? await uploadImageToNas(file)
+        : await uploadImageToSupabase(file);
+    const imageMarkdown = `![${file.name}](${imageUrl})`;
+
+    if (!formData.value.content.includes(imageUrl)) {
+      formData.value.content = formData.value.content
+          ? `${imageMarkdown}\n\n${formData.value.content}`
+          : imageMarkdown;
+    }
+
+    success(`Image "${file.name}" uploaded and added to markdown!`);
+  } catch (e: any) {
+    console.error("Image upload failed:", e);
+    error(e?.message || "Image upload failed");
+  } finally {
+    isUploadingImage.value = false;
+    target.value = "";
+  }
+};
 
 const loadPosts = async () => {
   loading.value = true;
@@ -458,12 +609,11 @@ const savePost = async () => {
 
         if (response.sent > 0) {
           success(`Notified ${response.sent} subscribers about the new post!`);
-        } else if (response.total === 0) {
+        } else if ("total" in response && response.total === 0) {
           console.log("No subscribers to notify");
         } else {
-          warning(
-              `Post published but ${response.failed} email(s) failed to send`,
-          );
+          const failedCount = "failed" in response ? response.failed : 0;
+          warning(`Post published but ${failedCount} email(s) failed to send`);
         }
       } catch (notifyError: any) {
         console.error("Failed to notify subscribers:", notifyError);

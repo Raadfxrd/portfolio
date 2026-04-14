@@ -5,7 +5,9 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
+    "dev:test:win": "powershell -ExecutionPolicy Bypass -File ./dev-test.ps1",
     "dev:prod": "./prod-test.sh",
+    "dev:prod:win": "powershell -ExecutionPolicy Bypass -File ./prod-test.ps1",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",

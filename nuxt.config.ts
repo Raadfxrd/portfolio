@@ -66,7 +66,8 @@ export default defineNuxtConfig({
         smtpHost: process.env.SMTP_HOST || "127.0.0.1",
         smtpPort: parseInt(process.env.SMTP_PORT || "2525"),
         smtpFrom: process.env.SMTP_FROM || "noreply@borysbabas.dev",
-        contactEmail: process.env.CONTACT_EMAIL || "info@borysbabas.dev",
+        contactEmail: process.env.CONTACT_EMAIL || "borysbabas@pm.me",
+        nasWindowsSharePath: process.env.NAS_WINDOWS_SHARE_PATH || "",
 
         // Public keys (exposed to client)
         public: {
@@ -74,6 +75,10 @@ export default defineNuxtConfig({
             recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || "",
             supabaseUrl: process.env.SUPABASE_URL || "",
             supabaseKey: process.env.SUPABASE_ANON_KEY || "",
+            nasBaseUrl:
+                process.env.NUXT_PUBLIC_NAS_BASE_URL ||
+                process.env.NAS_BASE_URL ||
+                "",
         },
     },
 });
