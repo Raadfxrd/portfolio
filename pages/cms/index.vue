@@ -280,9 +280,7 @@
                   >Content (Markdown)</label
                   >
                   <div class="flex items-center gap-2">
-                    <span class="text-text-secondary text-xs">
-                      {{ hasNasStorage ? "NAS" : "Supabase" }} storage
-                    </span>
+                    <span class="text-text-secondary text-xs">Supabase storage</span>
                     <input
                         ref="fileInput"
                         accept="image/*"
@@ -305,7 +303,7 @@
                 </p>
                 <div
                     v-if="editingPost && !modalReady"
-                    class="bg-background-dark text-text-secondary border-border-light flex h-[400px] items-center justify-center rounded-lg border-2"
+                    class="bg-background-dark text-text-secondary border-border-light flex h-100 items-center justify-center rounded-lg border-2"
                 >
                   <div class="flex items-center gap-2">
                     <div
@@ -368,7 +366,6 @@
 
 <script lang="ts" setup>
 import NotificationContainer from "~/components/NotificationContainer.vue";
-import {isNasSharePath, normalizeNasBaseUrl, useNasStorage,} from "~/composables/useNasStorage";
 import {useNotification} from "~/composables/useNotification";
 import {PlusIcon} from "@heroicons/vue/24/outline";
 
@@ -380,7 +377,6 @@ definePageMeta({
 const {success, error, warning} = useNotification();
 const config = useRuntimeConfig();
 const {supabase} = useSupabase();
-const {uploadFile} = useNasStorage();
 
 const posts = ref<any[]>([]);
 const loading = ref(true);
@@ -390,12 +386,6 @@ const modalReady = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const uploadedFileName = ref<string | null>(null);
 const isUploadingImage = ref(false);
-const rawNasBaseUrl = computed(() => String(config.public.nasBaseUrl || "").trim());
-const isNasShareMode = computed(() => isNasSharePath(rawNasBaseUrl.value));
-const nasBaseUrl = computed(() =>
-    isNasShareMode.value ? "" : normalizeNasBaseUrl(rawNasBaseUrl.value),
-);
-const hasNasStorage = computed(() => Boolean(rawNasBaseUrl.value));
 const formData = ref({
   title: "",
   slug: "",
@@ -416,6 +406,33 @@ const getSafeFileName = (name: string) =>
         .replace(/[^a-z0-9.-]/g, "-")
         .replace(/-+/g, "-");
 
+const getSupabaseProjectRef = () => {
+  try {
+    return new URL(String(config.public.supabaseUrl || "")).hostname.split(".")[0] || "unknown";
+  } catch {
+    return "unknown";
+  }
+};
+
+const extractErrorMessage = (err: any) =>
+    err?.message || err?.error_description || err?.error || err?.details || "Image upload failed";
+
+const getUploadHint = (message: string, statusCode?: number) => {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("signature verification failed")) {
+    return "Supabase anon key likely does not match this project URL. Recheck NUXT_PUBLIC_SUPABASE_URL and NUXT_PUBLIC_SUPABASE_ANON_KEY.";
+  }
+  if (normalized.includes("bucket") && normalized.includes("not found")) {
+    return "Storage bucket is missing. Create bucket 'media' (or update bucketName in CMS).";
+  }
+  if (statusCode === 401 || statusCode === 403) {
+    return "Upload blocked by auth/policy. Verify anon key and storage RLS policies.";
+  }
+
+  return "Check Supabase key, bucket configuration, and storage policies.";
+};
+
 const triggerFileUpload = () => {
   if (isUploadingImage.value) {
     warning("An upload is already in progress");
@@ -425,36 +442,8 @@ const triggerFileUpload = () => {
   fileInput.value?.click();
 };
 
-const uploadImageToNas = async (file: File) => {
-  const response = await uploadFile(file);
-  const baseUrl = nasBaseUrl.value;
-
-  if (response.url) {
-    const resolvedUrl = String(response.url).trim();
-    if (resolvedUrl.startsWith("/")) return resolvedUrl;
-    if (/^https?:\/\//i.test(resolvedUrl)) return resolvedUrl;
-    return `${baseUrl}/${resolvedUrl.replace(/^\/+/, "")}`;
-  }
-
-  if (response.filename) {
-    if (isNasShareMode.value) {
-      return `/api/cms/nas/file/${encodeURIComponent(String(response.filename))}`;
-    }
-    return `${baseUrl}/download/${response.filename}`;
-  }
-
-  if (response.path) {
-    if (isNasShareMode.value) {
-      return `/api/cms/nas/file/${encodeURIComponent(String(response.path))}`;
-    }
-    return `${baseUrl}/${String(response.path).replace(/^\/+/, "")}`;
-  }
-
-  throw new Error("NAS upload succeeded but no public file URL was returned");
-};
-
 const uploadImageToSupabase = async (file: File) => {
-  const bucketName = "blog-images";
+  const bucketName = "media";
   const postSlug = formData.value.slug || editingPost.value?.slug || "draft";
   const path = `cms/${postSlug}/${Date.now()}-${getSafeFileName(file.name)}`;
 
@@ -466,7 +455,27 @@ const uploadImageToSupabase = async (file: File) => {
         upsert: true,
       });
 
-  if (uploadError) throw uploadError;
+  if (uploadError) {
+    const message = extractErrorMessage(uploadError);
+    const statusCode = uploadError?.statusCode as number | undefined;
+
+    console.error("Supabase upload failed", {
+      message,
+      statusCode,
+      hint: getUploadHint(message, statusCode),
+      context: {
+        projectRef: getSupabaseProjectRef(),
+        bucketName,
+        path,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      },
+      error: uploadError,
+    });
+
+    throw new Error(message);
+  }
 
   const {data} = supabase.storage.from(bucketName).getPublicUrl(path);
   return data.publicUrl;
@@ -503,9 +512,7 @@ const handleFileUpload = async (event: Event) => {
     isUploadingImage.value = true;
     success("Uploading image...");
 
-    const imageUrl = hasNasStorage.value
-        ? await uploadImageToNas(file)
-        : await uploadImageToSupabase(file);
+    const imageUrl = await uploadImageToSupabase(file);
     const imageMarkdown = `![${file.name}](${imageUrl})`;
 
     if (!formData.value.content.includes(imageUrl)) {
@@ -516,8 +523,14 @@ const handleFileUpload = async (event: Event) => {
 
     success(`Image "${file.name}" uploaded and added to markdown!`);
   } catch (e: any) {
-    console.error("Image upload failed:", e);
-    error(e?.message || "Image upload failed");
+    const message = extractErrorMessage(e);
+    console.error("Image upload failed", {
+      message,
+      hint: getUploadHint(message, e?.statusCode),
+      projectRef: getSupabaseProjectRef(),
+      error: e,
+    });
+    error(message);
   } finally {
     isUploadingImage.value = false;
     target.value = "";

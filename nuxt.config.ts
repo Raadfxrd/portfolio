@@ -59,25 +59,30 @@ export default defineNuxtConfig({
         jwtSecret:
             process.env.JWT_SECRET ||
             "your-super-secret-jwt-key-change-this-in-production",
-        supabaseUrl: process.env.SUPABASE_URL,
-        supabaseKey: process.env.SUPABASE_ANON_KEY,
+        supabaseUrl:
+            process.env.SUPABASE_URL || process.env.NUXT_PUBLIC_SUPABASE_URL || "",
+        supabaseKey:
+            process.env.SUPABASE_ANON_KEY ||
+            process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
+            "",
         resendApiKey: process.env.RESEND_API_KEY || "",
         useResend: process.env.USE_RESEND === "true",
         smtpHost: process.env.SMTP_HOST || "127.0.0.1",
         smtpPort: parseInt(process.env.SMTP_PORT || "2525"),
         smtpFrom: process.env.SMTP_FROM || "noreply@borysbabas.dev",
         contactEmail: process.env.CONTACT_EMAIL || "borysbabas@pm.me",
-        nasWindowsSharePath: process.env.NAS_WINDOWS_SHARE_PATH || "",
 
         // Public keys (exposed to client)
         public: {
             githubToken: process.env.NUXT_PUBLIC_GITHUB_TOKEN || "",
             recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || "",
-            supabaseUrl: process.env.SUPABASE_URL || "",
-            supabaseKey: process.env.SUPABASE_ANON_KEY || "",
-            nasBaseUrl:
-                process.env.NUXT_PUBLIC_NAS_BASE_URL ||
-                process.env.NAS_BASE_URL ||
+            supabaseUrl:
+                process.env.NUXT_PUBLIC_SUPABASE_URL ||
+                process.env.SUPABASE_URL ||
+                "",
+            supabaseKey:
+                process.env.NUXT_PUBLIC_SUPABASE_ANON_KEY ||
+                process.env.SUPABASE_ANON_KEY ||
                 "",
         },
     },
