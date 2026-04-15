@@ -5,36 +5,18 @@ type NasUploadResponse = {
     [key: string]: any;
 };
 
-export const isNasSharePath = (rawPath?: string) => {
-    const trimmed = String(rawPath || "").trim();
-    return /^\\\\/.test(trimmed) || /^[a-zA-Z]:[\\/]/.test(trimmed);
-};
-
-export const normalizeNasBaseUrl = (rawUrl?: string) => {
-    const trimmed = String(rawUrl || "").trim();
-    if (!trimmed) return "";
-
-    const withProtocol = /^https?:\/\//i.test(trimmed)
-        ? trimmed
-        : `https://${trimmed}`;
-
-    return withProtocol.replace(/\/+$/, "");
-};
-
 export const useNasStorage = () => {
     const config = useRuntimeConfig();
-    const rawNasValue = String(config.public.nasBaseUrl || "").trim();
-    const useServerShareProxy = isNasSharePath(rawNasValue);
-    const baseUrl = normalizeNasBaseUrl(rawNasValue);
+    const nasShareEnabled = Boolean(config.public.nasShareEnabled);
 
-    const assertBaseUrl = () => {
-        if (!useServerShareProxy && !baseUrl) {
-            throw new Error("NAS base URL is not configured");
+    const assertNasEnabled = () => {
+        if (!nasShareEnabled) {
+            throw new Error("NAS share path is not configured");
         }
     };
 
     const uploadFile = async (file: File): Promise<NasUploadResponse> => {
-        assertBaseUrl();
+        assertNasEnabled();
 
         const formData = new FormData();
         formData.append("file", file);
@@ -53,11 +35,8 @@ export const useNasStorage = () => {
     };
 
     const downloadFile = async (filename: string) => {
-        assertBaseUrl();
-
-        const downloadUrl = useServerShareProxy
-            ? `/api/cms/nas/file/${encodeURIComponent(filename)}`
-            : `${baseUrl}/download/${filename}`;
+        assertNasEnabled();
+        const downloadUrl = `/api/cms/nas/file/${encodeURIComponent(filename)}`;
 
         const response = await fetch(downloadUrl);
 

@@ -281,7 +281,7 @@
                   >
                   <div class="flex items-center gap-2">
                     <span class="text-text-secondary text-xs">
-                      {{ hasNasStorage ? "NAS" : "Supabase" }} storage
+                      NAS storage
                     </span>
                     <input
                         ref="fileInput"
@@ -368,7 +368,7 @@
 
 <script lang="ts" setup>
 import NotificationContainer from "~/components/NotificationContainer.vue";
-import {isNasSharePath, normalizeNasBaseUrl, useNasStorage,} from "~/composables/useNasStorage";
+import {useNasStorage,} from "~/composables/useNasStorage";
 import {useNotification} from "~/composables/useNotification";
 import {PlusIcon} from "@heroicons/vue/24/outline";
 
@@ -379,7 +379,6 @@ definePageMeta({
 
 const {success, error, warning} = useNotification();
 const config = useRuntimeConfig();
-const {supabase} = useSupabase();
 const {uploadFile} = useNasStorage();
 
 const posts = ref<any[]>([]);
@@ -390,12 +389,7 @@ const modalReady = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const uploadedFileName = ref<string | null>(null);
 const isUploadingImage = ref(false);
-const rawNasBaseUrl = computed(() => String(config.public.nasBaseUrl || "").trim());
-const isNasShareMode = computed(() => isNasSharePath(rawNasBaseUrl.value));
-const nasBaseUrl = computed(() =>
-    isNasShareMode.value ? "" : normalizeNasBaseUrl(rawNasBaseUrl.value),
-);
-const hasNasStorage = computed(() => Boolean(rawNasBaseUrl.value));
+const hasNasStorage = computed(() => Boolean(config.public.nasShareEnabled));
 const formData = ref({
   title: "",
   slug: "",
@@ -410,12 +404,6 @@ onMounted(async () => {
   await loadPosts();
 });
 
-const getSafeFileName = (name: string) =>
-    name
-        .toLowerCase()
-        .replace(/[^a-z0-9.-]/g, "-")
-        .replace(/-+/g, "-");
-
 const triggerFileUpload = () => {
   if (isUploadingImage.value) {
     warning("An upload is already in progress");
@@ -427,49 +415,23 @@ const triggerFileUpload = () => {
 
 const uploadImageToNas = async (file: File) => {
   const response = await uploadFile(file);
-  const baseUrl = nasBaseUrl.value;
 
   if (response.url) {
     const resolvedUrl = String(response.url).trim();
     if (resolvedUrl.startsWith("/")) return resolvedUrl;
     if (/^https?:\/\//i.test(resolvedUrl)) return resolvedUrl;
-    return `${baseUrl}/${resolvedUrl.replace(/^\/+/, "")}`;
+    return `/${resolvedUrl.replace(/^\/+/, "")}`;
   }
 
   if (response.filename) {
-    if (isNasShareMode.value) {
-      return `/api/cms/nas/file/${encodeURIComponent(String(response.filename))}`;
-    }
-    return `${baseUrl}/download/${response.filename}`;
+    return `/api/cms/nas/file/${encodeURIComponent(String(response.filename))}`;
   }
 
   if (response.path) {
-    if (isNasShareMode.value) {
-      return `/api/cms/nas/file/${encodeURIComponent(String(response.path))}`;
-    }
-    return `${baseUrl}/${String(response.path).replace(/^\/+/, "")}`;
+    return `/api/cms/nas/file/${encodeURIComponent(String(response.path))}`;
   }
 
   throw new Error("NAS upload succeeded but no public file URL was returned");
-};
-
-const uploadImageToSupabase = async (file: File) => {
-  const bucketName = "blog-images";
-  const postSlug = formData.value.slug || editingPost.value?.slug || "draft";
-  const path = `cms/${postSlug}/${Date.now()}-${getSafeFileName(file.name)}`;
-
-  const {error: uploadError} = await supabase.storage
-      .from(bucketName)
-      .upload(path, file, {
-        cacheControl: "3600",
-        contentType: file.type,
-        upsert: true,
-      });
-
-  if (uploadError) throw uploadError;
-
-  const {data} = supabase.storage.from(bucketName).getPublicUrl(path);
-  return data.publicUrl;
 };
 
 const handleFileUpload = async (event: Event) => {
@@ -484,9 +446,9 @@ const handleFileUpload = async (event: Event) => {
     return;
   }
 
-  const maxSizeInBytes = 10 * 1024 * 1024;
+  const maxSizeInBytes = 50 * 1024 * 1024;
   if (file.size > maxSizeInBytes) {
-    error("Image is too large. Maximum allowed size is 10MB.");
+    error("Image is too large. Maximum allowed size is 50MB.");
     target.value = "";
     return;
   }
@@ -503,9 +465,12 @@ const handleFileUpload = async (event: Event) => {
     isUploadingImage.value = true;
     success("Uploading image...");
 
-    const imageUrl = hasNasStorage.value
-        ? await uploadImageToNas(file)
-        : await uploadImageToSupabase(file);
+    if (!hasNasStorage.value) {
+      error("NAS share path is not configured on the server");
+      return;
+    }
+
+    const imageUrl = await uploadImageToNas(file);
     const imageMarkdown = `![${file.name}](${imageUrl})`;
 
     if (!formData.value.content.includes(imageUrl)) {

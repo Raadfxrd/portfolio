@@ -75,10 +75,7 @@ export default defineNuxtConfig({
             recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || "",
             supabaseUrl: process.env.SUPABASE_URL || "",
             supabaseKey: process.env.SUPABASE_ANON_KEY || "",
-            nasBaseUrl:
-                process.env.NUXT_PUBLIC_NAS_BASE_URL ||
-                process.env.NAS_BASE_URL ||
-                "",
+            nasShareEnabled: Boolean(process.env.NAS_WINDOWS_SHARE_PATH),
         },
     },
 });

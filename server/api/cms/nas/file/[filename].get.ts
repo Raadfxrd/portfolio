@@ -31,16 +31,11 @@ const getContentType = (filename: string) => {
 
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig(event);
-    const candidates = [
-        String(config.nasWindowsSharePath || "").trim(),
-        String(config.public?.nasBaseUrl || "").trim(),
-    ];
-
-    const sharePath = candidates.find((value) => isNasSharePath(value));
-    if (!sharePath) {
+    const sharePath = String(config.nasWindowsSharePath || "").trim();
+    if (!isNasSharePath(sharePath)) {
         throw createError({
             statusCode: 404,
-            message: "NAS share path is not configured",
+            message: "NAS_WINDOWS_SHARE_PATH is not configured",
         });
     }
 
