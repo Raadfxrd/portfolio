@@ -24,8 +24,9 @@ animations and interactive elements.
 
 **Dynamic GitHub Integration** - Automatically fetches and displays projects from GitHub with READMEs and images  
 **Dark Mode Support** - Seamless theme switching with system preference detection  
-**Blog System** - Content management powered by Nuxt Content  
-**Built-in CMS** - Secure admin panel with MySQL database for managing blog posts and subscribers  
+**Blog System** - Database-backed blog with Markdown post bodies  
+**Built-in CMS** - Secure admin panel with PostgreSQL for managing blog posts and subscribers  
+**Newsletter** - Double-checked subscribe/unsubscribe flow with signed, single-purpose links  
 **Interactive UI** - Engaging animations and modal interactions  
 **Lightning Fast** - Built with Nuxt 4 and Vite for optimal performance  
 **Modern UI** - Tailwind CSS 4 with custom animations and transitions  
@@ -35,7 +36,10 @@ animations and interactive elements.
 
 - **Framework**: [Nuxt 4](https://nuxt.com/) - Vue 3 meta-framework
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) with Vite plugin
-- **Content**: [Nuxt Content](https://content.nuxt.com/) - File-based CMS
+- **Database**: [PostgreSQL](https://www.postgresql.org/) (Supabase) via [Drizzle ORM](https://orm.drizzle.team/)
+- **Auth**: JWT session cookies with bcrypt password hashing
+- **Email**: [Resend](https://resend.com/) in production, [Mailpit](https://mailpit.axllent.org/) over SMTP locally
+- **Markdown**: [marked](https://marked.js.org/) for rendering post bodies
 - **Icons**: [Heroicons Vue](https://heroicons.com/)
 - **Animations**: GSAP & custom CSS animations
 - **Typography**: [@tailwindcss/typography](https://tailwindcss.com/docs/typography-plugin)
@@ -60,7 +64,7 @@ rate limiting when fetching repositories.
 
 **Complete sitemap system documentation** - Understand how the semi-automatic sitemap works and how to add new pages.
 
-- Architecture overview (automatic blog discovery via Nuxt Content)
+- Architecture overview (automatic blog discovery from the database)
 - Configuration reference for adding new pages
 - Implementation examples for different page types
 - Route processing and blog post pipelines
@@ -78,6 +82,31 @@ Install dependencies:
 
 ```bash
 npm install
+```
+
+Create your environment file:
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` documents every variable the app reads. Two are required before the site will run:
+
+| Variable | Required | Notes |
+| --- | --- | --- |
+| `JWT_SECRET` | **Yes** | Signs admin sessions and newsletter unsubscribe links. There is no default — generate one with `openssl rand -base64 48`. |
+| `DATABASE_URL` | **Yes** | PostgreSQL connection string (Supabase or any Postgres host). |
+| `GITHUB_TOKEN` | Recommended | Raises the GitHub API rate limit. See the [token guide](docs/GITHUB_TOKEN_SETUP.md). |
+| `NUXT_RECAPTCHA_SECRET_KEY` / `NUXT_PUBLIC_RECAPTCHA_SITE_KEY` | Production | Protects the contact and newsletter forms. Set `SKIP_RECAPTCHA=true` locally. |
+| `USE_RESEND` / `RESEND_API_KEY` | Production | When `USE_RESEND` is false, mail goes over SMTP to Mailpit instead. |
+
+> Only variables prefixed `NUXT_PUBLIC_` are exposed to the browser. Never add that prefix to a secret.
+
+Then set up the database and create the admin user:
+
+```bash
+npm run db:push          # apply the schema
+npm run db:init          # create the admin user from ADMIN_* in .env
 ```
 
 ## Development
@@ -126,90 +155,104 @@ npm run generate
 ```
 portfolio/
 ├── .env                       # Environment variables (not in git)
-├── .env.example               # Example environment configuration
-├── .gitignore                 # Git ignore rules
+├── .env.example               # Documented example environment configuration
 ├── .node-version              # Node version specification
-├── .nuxt/                     # Nuxt build directory (auto-generated)
-├── .output/                   # Production build output
-├── app.vue                    # Main app component
-├── nuxt.config.ts             # Nuxt configuration
-├── content.config.ts          # Nuxt Content configuration
-├── tailwind.config.js         # Tailwind CSS configuration
+├── nuxt.config.ts             # Nuxt configuration & runtime config
+├── drizzle.config.ts          # Drizzle Kit configuration
 ├── tsconfig.json              # TypeScript configuration
 ├── package.json               # Dependencies and scripts
-├── dev-test.sh                # Development testing script
-├── README.md                  # Project documentation
-├── GITHUB_TOKEN_SETUP.md      # GitHub API token setup guide
-├── SITEMAP_GUIDE.md           # Dynamic sitemap developer guide
-├── assets/
-│   └── css/
-│       ├── main.css           # Global styles
-│       └── animations.css     # Custom animations
+├── dev-test.sh                # Dev environment + Mailpit launcher
+├── prod-test.sh               # Dev server with production config
+├── supabase-setup.sql         # Initial database schema
+├── docs/
+│   ├── GITHUB_TOKEN_SETUP.md  # GitHub API token setup guide
+│   └── SITEMAP_GUIDE.md       # Sitemap developer guide
+├── app.vue                    # Root component
+├── assets/css/
+│   ├── main.css               # Global styles & Tailwind theme tokens
+│   └── animations.css         # Custom animations
 ├── components/
-│   ├── DetailModal.vue        # Modal component for interests
-│   ├── EducationTrajectory.vue # Education timeline
-│   ├── ExplodingImage.vue     # Interactive image component
-│   ├── FadeInSection.vue      # Scroll animations
+│   ├── AdminNavbar.vue        # CMS navigation
+│   ├── DetailModal.vue        # Modal for interests
+│   ├── EducationTrajectory.vue# Education timeline
+│   ├── ExplodingImage.vue     # GSAP portrait animation
+│   ├── FadeInSection.vue      # Scroll-triggered reveal
 │   ├── Footer.vue             # Site footer
 │   ├── Navbar.vue             # Navigation bar
 │   ├── NavLinks.vue           # Navigation links
+│   ├── NotificationContainer.vue # Toast notifications
 │   ├── PostCard.vue           # Blog post card
 │   ├── SubscriptionForm.vue   # Newsletter subscription
 │   ├── TechStack.vue          # Technology showcase
 │   └── WorkExperience.vue     # Work history
 ├── composables/
 │   ├── techStack.ts           # Tech stack data
+│   ├── useBlogPosts.ts        # Shared published-post list
 │   ├── useEmailObfuscation.ts # Email obfuscation utility
-│   ├── useGreeting.ts         # Dynamic greeting
+│   ├── useGreeting.ts         # Time-of-day greeting
 │   ├── useIntroSequence.ts    # Intro animations
-│   ├── useNavbarVisibility.ts # Navbar scroll behavior
-│   ├── useRecaptcha.ts        # ReCAPTCHA integration
+│   ├── useNavbarVisibility.ts # Navbar visibility state
+│   ├── useNewsletter.ts       # Newsletter subscribe helper
+│   ├── useNotification.ts     # Toast notification store
+│   ├── useRecaptcha.ts        # reCAPTCHA v3 integration
 │   └── useRotatingTitles.ts   # Rotating title effect
-├── content/
-│   └── blog/                  # Markdown blog posts
-│       ├── from-idea-to-interface.md
-│       ├── how-i-started-coding.md
-│       ├── keyboard-customisation.md
-│       ├── perfect-portfolio.md
-│       ├── vue-portfolio-build.md
-│       └── working-with-clients.md
 ├── layouts/
-│   └── default.vue            # Default layout
+│   ├── default.vue            # Public site layout
+│   └── admin.vue              # CMS layout
+├── middleware/
+│   └── auth.ts                # Route guard for /cms
 ├── pages/
 │   ├── index.vue              # Home page
 │   ├── contact.vue            # Contact form
-│   ├── interests.vue          # Personal interests with modal cards
+│   ├── interests.vue          # Personal interests
 │   ├── privacy.vue            # Privacy policy
 │   ├── projects.vue           # Projects (GitHub integration)
 │   ├── services.vue           # Services offered
-│   ├── sitemap.vue            # Dynamic sitemap
+│   ├── sitemap.vue            # Human-readable sitemap
 │   ├── terms.vue              # Terms of service
-│   └── blog/
-│       ├── index.vue          # Blog listing
-│       └── [slug].vue         # Dynamic blog post pages
+│   ├── admin/login.vue        # CMS login
+│   ├── cms/index.vue          # CMS dashboard
+│   ├── blog/
+│   │   ├── index.vue          # Blog listing
+│   │   └── [slug].vue         # Blog post page
+│   └── newsletter/
+│       └── unsubscribe.vue    # Unsubscribe confirmation
 ├── public/
 │   ├── favicon.ico
 │   ├── robots.txt
-│   ├── assets/
-│   │   └── borys-cv.pdf       # Resume/CV
-│   ├── fonts/
-│   │   └── Pearl.ttf          # Custom font
+│   ├── assets/borys-cv.pdf    # Resume/CV
+│   ├── fonts/Pearl.ttf        # Custom font
 │   └── img/                   # Images and thumbnails
-│       ├── portfolio.png
-│       ├── raadfxrd.jpeg
-│       ├── companies/         # Company logos
-│       ├── satelite/          # Personal photos
-│       └── schools/           # Education institution logos
+├── scripts/                   # One-off CLI tasks (admin user, migrations)
 └── server/
-    └── api/
-        └── contact.post.ts    # Contact form API endpoint
+    ├── api/
+    │   ├── auth/              # login / logout / me
+    │   ├── cms/posts/         # Blog post CRUD
+    │   ├── github/repos.get.ts# Cached GitHub proxy
+    │   ├── newsletter/        # subscribe / unsubscribe / notify
+    │   └── contact.post.ts    # Contact form endpoint
+    ├── database/
+    │   ├── client.ts          # Drizzle + postgres connection
+    │   ├── schema.ts          # Table definitions
+    │   └── migrations/        # Generated migrations
+    └── utils/
+        ├── auth.ts            # JWT & password hashing
+        ├── email.ts           # Resend/SMTP sending, signed tokens
+        ├── emailTemplates.ts  # Transactional email markup
+        ├── html.ts            # HTML escaping for emails
+        ├── newsletter.ts      # Unsubscribe token resolution
+        ├── rateLimit.ts       # In-memory request throttling
+        └── recaptcha.ts       # reCAPTCHA verification
 ```
+
 
 ## Key Features
 
 ### GitHub Projects Integration
 
-The projects page automatically fetches repositories from GitHub (`raadfxrd`), extracts README content, and displays:
+The projects page reads from `/api/github/repos`, a cached server-side proxy that fetches repositories from
+GitHub (`raadfxrd`) and extracts README content. The GitHub token stays on the server. For each repository it
+displays:
 
 - First image from README as thumbnail
 - Project title and description parsed from README
@@ -253,12 +296,12 @@ Intelligent theme switching:
 
 ### Content Management
 
-Blog posts written in Markdown with:
+Blog posts are stored in PostgreSQL and authored through the built-in CMS at `/cms`:
 
-- Frontmatter metadata
-- Automatic routing
-- Syntax highlighting
-- Typography optimization
+- Post bodies written in Markdown, rendered with `marked`
+- Draft/published state — drafts are never served to anonymous visitors
+- Publishing a post can notify newsletter subscribers in batches
+- Typography optimization via `@tailwindcss/typography`
 
 ## Scripts
 
@@ -306,7 +349,7 @@ npm run dev
 - **Framework**: [Nuxt Team](https://nuxt.com/) for the amazing meta-framework
 - **Animations**: [GSAP](https://greensock.com/gsap/) for smooth animations
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) for utility-first CSS
-- **Content**: [Nuxt Content](https://content.nuxt.com/) for file-based CMS
+- **Database**: [Drizzle ORM](https://orm.drizzle.team/) & [Supabase](https://supabase.com/)
 
 ---
 
