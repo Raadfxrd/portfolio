@@ -6,25 +6,7 @@ useSeoMeta({
   description: "Browse all pages and content on borysbabas.dev",
 });
 
-const {data: posts} = await useAsyncData(async () => {
-  try {
-    const data = await $fetch("/api/cms/posts");
-    if (!data || !Array.isArray(data)) return [];
-    return data
-        .filter((post: any) => post.published)
-        .map((post: any) => ({
-          ...post,
-          path: `/blog/${post.slug}`,
-        }))
-        .sort(
-            (a: any, b: any) =>
-                new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-  } catch (e) {
-    console.error("Failed to load posts:", e);
-    return [];
-  }
-});
+const { data: posts } = await useBlogPosts();
 
 const pageDescriptions: Record<string, string> = {
   "/": "Welcome to my portfolio",

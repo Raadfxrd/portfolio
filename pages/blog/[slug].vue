@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import {computed, watch} from "vue";
-import {useRoute} from "vue-router";
-import {useAsyncData} from "#app";
-import {ChevronLeftIcon} from "@heroicons/vue/24/outline";
-import {marked} from "marked";
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+import { ChevronLeftIcon } from "@heroicons/vue/24/outline";
+import { marked } from "marked";
 
 const route = useRoute();
 const slug = computed(() => {
@@ -11,59 +10,42 @@ const slug = computed(() => {
   return Array.isArray(paramSlug) ? paramSlug[0] : paramSlug;
 });
 
-const {
-  data: post,
-  error,
-  refresh,
-} = await useAsyncData(`blog-${slug.value}`, async () => {
-  try {
-    const posts = await $fetch("/api/cms/posts");
-    if (!posts || !Array.isArray(posts)) {
-      console.error("Posts API returned invalid data:", posts);
-      return null;
-    }
-    const result = posts.find((p: any) => p.slug === slug.value);
-    if (!result) {
-      console.error(
-          "Post not found with slug:",
-          slug.value,
-          "Available slugs:",
-          posts.map((p: any) => p.slug),
-      );
-      return null;
-    }
-    return result;
-  } catch (e) {
-    console.error("Error loading post:", e);
-    return null;
-  }
-});
+/**
+ * Fetch just this post.
+ *
+ * The previous implementation requested the entire post list and searched it
+ * client-side, so rendering one article downloaded the full markdown body of
+ * every article on the site. The key is reactive and `watch` re-runs it, which
+ * also fixes navigating between two posts reusing the first one's cache entry.
+ */
+const { data: post, error } = await useAsyncData(
+  () => `blog-post-${slug.value}`,
+  () => $fetch(`/api/cms/posts/${encodeURIComponent(slug.value as string)}`),
+  { watch: [slug] },
+);
+
+// A missing post is a real 404, not a page that renders empty.
+if (!post.value) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: "Post not found",
+    fatal: true,
+  });
+}
 
 // Convert Markdown content to HTML
-const htmlContent = computed(() => {
-  if (!post.value?.content) return "";
-  return marked(post.value.content);
-});
+const htmlContent = computed(() =>
+  post.value?.content ? (marked.parse(post.value.content) as string) : "",
+);
 
 // Set SEO meta tags
-watchEffect(() => {
-  if (post.value) {
-    useSeoMeta({
-      title: `${post.value.title} - Borys`,
-      description: post.value.description,
-      ogTitle: post.value.title,
-      ogDescription: post.value.description,
-      ogType: "article",
-    });
-  }
+useSeoMeta({
+  title: () => (post.value ? `${post.value.title} - Borys` : "Borys"),
+  description: () => post.value?.description ?? "",
+  ogTitle: () => post.value?.title ?? "",
+  ogDescription: () => post.value?.description ?? "",
+  ogType: "article",
 });
-
-watch(
-    () => slug.value,
-    async () => {
-      await refresh();
-    },
-);
 
 const formatDate = (date: string) => {
   if (!date) return "";

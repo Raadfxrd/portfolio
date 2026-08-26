@@ -182,29 +182,15 @@ const legalLinks = [
   {path: "/sitemap", label: "Sitemap"},
 ];
 
-const {data: footerPosts} = await useAsyncData("footer-posts", async () => {
-  try {
-    const posts = await $fetch("/api/cms/posts");
-    if (!posts || !Array.isArray(posts)) return [];
-    return posts
-        .filter((post: any) => post.published)
-        .sort(
-            (a: any, b: any) =>
-                new Date(b.date).getTime() - new Date(a.date).getTime(),
-        )
-        .slice(0, 3);
-  } catch (e) {
-    console.error("Failed to load footer posts:", e);
-    return [];
-  }
-});
+// Shares the "blog-posts" request with whichever page is rendering, instead
+// of issuing a second identical call from the footer on every page.
+const {data: footerPosts} = await useBlogPosts();
 
-const latestPosts = computed(
-    () =>
-        footerPosts.value?.map((post: any) => ({
-          title: post.title,
-          slug: post.slug,
-        })) || [],
+const latestPosts = computed(() =>
+    (footerPosts.value ?? []).slice(0, 3).map((post) => ({
+      title: post.title,
+      slug: post.slug,
+    })),
 );
 
 const navigateToLogin = () => {
