@@ -1,26 +1,40 @@
-import {db} from "~/server/database/client";
-import {blogPosts} from "~/server/database/schema";
-import {requireAuth} from "~/server/utils/auth";
-import {eq} from "drizzle-orm";
+import { db } from "~/server/database/client";
+import { blogPosts } from "~/server/database/schema";
+import { getAuthUser, requireAuth } from "~/server/utils/auth";
+import { eq } from "drizzle-orm";
 
-// GET - List all blog posts
+/**
+ * Columns returned by the list endpoint.
+ *
+ * `content` is deliberately excluded: this list is rendered by the footer on
+ * every page, plus the home, blog index, sitemap and CMS pages, and none of
+ * them display the post body. Including it made every page load carry the full
+ * markdown of every post.
+ */
+const listColumns = {
+    id: blogPosts.id,
+    slug: blogPosts.slug,
+    title: blogPosts.title,
+    description: blogPosts.description,
+    author: blogPosts.author,
+    date: blogPosts.date,
+    published: blogPosts.published,
+    createdAt: blogPosts.createdAt,
+    updatedAt: blogPosts.updatedAt,
+};
+
 export default defineEventHandler(async (event) => {
     const method = event.method;
 
     if (method === "GET") {
-        // Public endpoint - only return published posts unless authenticated
-        try {
-            await requireAuth(event);
-            // Authenticated - return all posts
+        const query = db.select(listColumns).from(blogPosts);
 
-            return await db.select().from(blogPosts);
-        } catch {
-            // Not authenticated - return only published posts
-            return await db
-                .select()
-                .from(blogPosts)
-                .where(eq(blogPosts.published, true));
+        // Drafts are only visible to a signed-in admin.
+        if (getAuthUser(event)) {
+            return await query;
         }
+
+        return await query.where(eq(blogPosts.published, true));
     }
 
     if (method === "POST") {
@@ -28,7 +42,7 @@ export default defineEventHandler(async (event) => {
         await requireAuth(event);
 
         const body = await readBody(event);
-        const {slug, title, description, content, author, date, published} = body;
+        const { slug, title, description, content, author, date, published } = body;
 
         if (!slug || !title || !description || !content || !author || !date) {
             throw createError({
@@ -37,9 +51,18 @@ export default defineEventHandler(async (event) => {
             });
         }
 
+        // The slug becomes a public URL segment, so keep it to a safe shape.
+        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+            throw createError({
+                statusCode: 400,
+                message:
+                    "Slug must contain only lowercase letters, numbers and single hyphens",
+            });
+        }
+
         // Check if slug already exists
         const existing = await db
-            .select()
+            .select({ id: blogPosts.id })
             .from(blogPosts)
             .where(eq(blogPosts.slug, slug))
             .limit(1);
@@ -51,22 +74,18 @@ export default defineEventHandler(async (event) => {
             });
         }
 
-        await db.insert(blogPosts).values({
-            slug,
-            title,
-            description,
-            content,
-            author,
-            date,
-            published: published || false,
-        });
-
-        // Fetch and return the newly created post
         const [newPost] = await db
-            .select()
-            .from(blogPosts)
-            .where(eq(blogPosts.slug, slug))
-            .limit(1);
+            .insert(blogPosts)
+            .values({
+                slug,
+                title,
+                description,
+                content,
+                author,
+                date,
+                published: published || false,
+            })
+            .returning();
 
         return newPost;
     }

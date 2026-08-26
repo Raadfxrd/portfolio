@@ -385,7 +385,7 @@ const loadPosts = async () => {
   }
 };
 
-const editPost = (post: any) => {
+const editPost = async (post: any) => {
   editingPost.value = post;
   modalReady.value = false;
 
@@ -394,19 +394,24 @@ const editPost = (post: any) => {
     title: post.title,
     slug: post.slug,
     description: post.description,
-    content: "", // Empty initially
+    content: "", // Filled in below
     author: post.author,
     date: post.date,
     published: post.published,
   };
 
-  // Defer loading the heavy content until after modal renders
-  nextTick(() => {
-    setTimeout(() => {
-      formData.value.content = post.content;
-      modalReady.value = true;
-    }, 100);
-  });
+  // The list endpoint no longer returns post bodies, so the markdown is
+  // fetched only for the post actually being edited.
+  try {
+    const full = await $fetch<{content: string}>(
+        `/api/cms/posts/${encodeURIComponent(post.slug)}`,
+    );
+    formData.value.content = full.content;
+    modalReady.value = true;
+  } catch (e) {
+    error("Failed to load post content. Please try again.");
+    closeModal();
+  }
 };
 
 const closeModal = () => {
