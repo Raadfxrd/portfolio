@@ -2,7 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
     compatibilityDate: "2025-12-09",
-    devtools: {enabled: true},
+    devtools: {enabled: process.env.NODE_ENV !== "production"},
 
     app: {
         pageTransition: {
@@ -19,10 +19,13 @@ export default defineNuxtConfig({
                 {name: "viewport", content: "width=device-width, initial-scale=1"},
             ],
             link: [
+                // Warm up the icon CDN connection before the stylesheet request lands.
+                {rel: "preconnect", href: "https://cdn.jsdelivr.net", crossorigin: ""},
                 {
                     rel: "stylesheet",
                     type: "text/css",
-                    href: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css",
+                    // Pinned: `@latest` re-resolves on every request and can change without notice.
+                    href: "https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/devicon.min.css",
                 },
             ],
         },
