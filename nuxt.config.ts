@@ -50,13 +50,14 @@ export default defineNuxtConfig({
         // Private keys (server-side only)
         databaseUrl: process.env.DATABASE_URL || "",
         recaptchaSecretKey: process.env.NUXT_RECAPTCHA_SECRET_KEY || "",
-        jwtSecret:
-            process.env.JWT_SECRET ||
-            "your-super-secret-jwt-key-change-this-in-production",
+        jwtSecret: process.env.JWT_SECRET || "",
         resendApiKey: process.env.RESEND_API_KEY || "",
         useResend: process.env.USE_RESEND === "true",
         smtpHost: process.env.SMTP_HOST || "127.0.0.1",
-        smtpPort: parseInt(process.env.SMTP_PORT || "2525"),
+        smtpPort: Number(process.env.SMTP_PORT) || 2525,
+        smtpSecure: process.env.SMTP_SECURE === "true",
+        smtpUser: process.env.SMTP_USER || "",
+        smtpPass: process.env.SMTP_PASS || "",
         smtpFrom: process.env.SMTP_FROM || "noreply@borysbabas.dev",
         contactEmail: process.env.CONTACT_EMAIL || "info@borysbabas.dev",
 

@@ -1,11 +1,32 @@
-import {db} from "~/server/database/client";
-import {users} from "~/server/database/schema";
-import {generateToken, verifyPassword} from "~/server/utils/auth";
-import {eq} from "drizzle-orm";
+import { db } from "~/server/database/client";
+import { users } from "~/server/database/schema";
+import {
+    AUTH_COOKIE_NAME,
+    AUTH_COOKIE_OPTIONS,
+    generateToken,
+    hashPassword,
+    verifyPassword,
+} from "~/server/utils/auth";
+import { rateLimit } from "~/server/utils/rateLimit";
+import { eq } from "drizzle-orm";
+
+/**
+ * Compared against when the username does not exist, so that a miss costs the
+ * same bcrypt work as a hit and cannot be distinguished by response time.
+ */
+let dummyHashPromise: Promise<string> | null = null;
+function getDummyHash() {
+    dummyHashPromise ??= hashPassword("invalid-password-placeholder");
+    return dummyHashPromise;
+}
 
 export default defineEventHandler(async (event) => {
+    // 10 attempts per 15 minutes per IP.
+    rateLimit(event, { key: "login", limit: 10, windowMs: 15 * 60 * 1000 });
+
     const body = await readBody(event);
-    const {username, password} = body;
+    const username = typeof body?.username === "string" ? body.username : "";
+    const password = typeof body?.password === "string" ? body.password : "";
 
     if (!username || !password) {
         throw createError({
@@ -21,17 +42,14 @@ export default defineEventHandler(async (event) => {
         .where(eq(users.username, username))
         .limit(1);
 
-    if (!user) {
-        throw createError({
-            statusCode: 401,
-            message: "Invalid credentials",
-        });
-    }
+    // Verify password. Always run a comparison, even for an unknown username,
+    // so the two cases are not separable by timing.
+    const isValid = await verifyPassword(
+        password,
+        user?.password ?? (await getDummyHash()),
+    );
 
-    // Verify password
-    const isValid = await verifyPassword(password, user.password);
-
-    if (!isValid) {
+    if (!user || !isValid) {
         throw createError({
             statusCode: 401,
             message: "Invalid credentials",
@@ -45,12 +63,9 @@ export default defineEventHandler(async (event) => {
     });
 
     // Set cookie
-    setCookie(event, "auth_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+    setCookie(event, AUTH_COOKIE_NAME, token, {
+        ...AUTH_COOKIE_OPTIONS,
         maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: "/",
     });
 
     return {
