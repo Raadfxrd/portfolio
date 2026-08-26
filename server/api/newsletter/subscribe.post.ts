@@ -4,6 +4,7 @@ import {eq} from "drizzle-orm";
 import {getUnsubscribeUrl, sendEmail} from "~/server/utils/email";
 import {emailTemplates} from "~/server/utils/emailTemplates";
 import {verifyRecaptcha} from "~/server/utils/recaptcha";
+import {rateLimit} from "~/server/utils/rateLimit";
 
 interface NewsletterSubscribeBody {
     email: string;
@@ -11,8 +12,16 @@ interface NewsletterSubscribeBody {
 }
 
 export default defineEventHandler(async (event) => {
+    // 5 subscribe attempts per hour per IP.
+    rateLimit(event, {key: "newsletter", limit: 5, windowMs: 60 * 60 * 1000});
+
     const body = await readBody<NewsletterSubscribeBody>(event);
-    const {email, recaptchaToken} = body;
+    const {recaptchaToken} = body;
+
+    // Normalised before every use: the unique index is case-sensitive, so
+    // without this "A@example.com" and "a@example.com" become two rows.
+    const email =
+        typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
 
     if (!email) {
         throw createError({
@@ -23,7 +32,7 @@ export default defineEventHandler(async (event) => {
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(email) || email.length > 254) {
         throw createError({
             statusCode: 400,
             message: "Invalid email format",
