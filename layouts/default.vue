@@ -16,7 +16,6 @@
       <div
           ref="scrollContainer"
           class="no-scrollbar sticky top-0 z-10 h-screen overflow-y-auto"
-          @mousemove="updateCursor"
       >
         <Navbar/>
         <main class="flex-1">
@@ -31,13 +30,15 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, onMounted, onUnmounted, ref, watch} from "vue";
-import {useRoute} from "vue-router";
-import {SpeedInsights} from "@vercel/speed-insights/vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
+import { SpeedInsights } from "@vercel/speed-insights/vue";
 
 const route = useRoute();
 
-const isInterestsPage = route.name === "Interests";
+// Compare on path: Nuxt derives route names from filenames, so this never
+// matched the capitalised "Interests" it was previously tested against.
+const isInterestsPage = computed(() => route.path === "/interests");
 const isBlogPage = computed(() => route.path.startsWith("/blog/"));
 
 const cursor = ref<HTMLElement | null>(null);
@@ -49,36 +50,46 @@ const updateScroll = () => {
   if (!scrollContainer.value) return;
   const scrollTop = scrollContainer.value.scrollTop;
   const scrollHeight =
-      scrollContainer.value.scrollHeight - scrollContainer.value.clientHeight;
-  scrollProgress.value = (scrollTop / scrollHeight) * 100;
+    scrollContainer.value.scrollHeight - scrollContainer.value.clientHeight;
+  // Guard the divide: a page shorter than the viewport gives 0 here, which
+  // produced `width: NaN%` on the progress bar.
+  scrollProgress.value =
+    scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
 };
+
+const TEXT_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
+const TEXT_SELECTOR =
+  "h1, h2, h3, h4, h5, h6, p, span, article, li, pre, code, [contenteditable='true']";
 
 let mouseX = 0;
 let mouseY = 0;
+let frame = 0;
 
-const updateCursor = (e: MouseEvent) => {
-  const target = e.target as HTMLElement;
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-
+const paintCursor = () => {
+  frame = 0;
   if (cursor.value) {
     cursor.value.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
   }
+};
 
+const updateCursor = (e: MouseEvent) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+
+  // Coalesce moves into one paint per frame rather than writing style on
+  // every event.
+  if (!frame) frame = requestAnimationFrame(paintCursor);
+
+  const target = e.target as HTMLElement;
+  if (!target?.closest) return;
+
+  // Note: no getComputedStyle here. Calling it per mousemove forced a style
+  // recalculation on every pointer event.
   if (target.tagName === "IMG" || target.closest("img")) {
     cursorType.value = "default";
   } else if (target.closest("a, button, [role='button'], .cursor-hover")) {
     cursorType.value = "hover";
-  } else if (
-      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
-      getComputedStyle(target).cursor === "text" ||
-      target.closest(
-          "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, li",
-      ) ||
-      target.matches(
-          "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, article, li",
-      )
-  ) {
+  } else if (TEXT_TAGS.has(target.tagName) || target.closest(TEXT_SELECTOR)) {
     cursorType.value = "text";
   } else {
     cursorType.value = "default";
@@ -87,7 +98,11 @@ const updateCursor = (e: MouseEvent) => {
 
 const addScrollListener = () => {
   if (scrollContainer.value) {
-    scrollContainer.value.addEventListener("scroll", updateScroll);
+    // Passive: this listener never calls preventDefault, and saying so lets
+    // the browser scroll without waiting on it.
+    scrollContainer.value.addEventListener("scroll", updateScroll, {
+      passive: true,
+    });
     updateScroll();
   }
 };
@@ -101,17 +116,23 @@ const removeScrollListener = () => {
 
 // Scroll to top on route change
 const scrollToTop = () => {
-  if (scrollContainer.value) {
-    scrollContainer.value.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
+  scrollContainer.value?.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+/** The custom cursor is hidden on touch devices, so skip the work entirely. */
+const hasFinePointer = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+let cursorEnabled = false;
+
 onMounted(() => {
-  document.body.style.cursor = "none";
-  window.addEventListener("mousemove", updateCursor);
+  cursorEnabled = hasFinePointer();
+
+  if (cursorEnabled) {
+    document.body.style.cursor = "none";
+    window.addEventListener("mousemove", updateCursor, { passive: true });
+  }
 
   if (isBlogPage.value) {
     addScrollListener();
@@ -120,21 +141,24 @@ onMounted(() => {
 
 // Watch route changes to toggle scroll listener and progress bar
 watch(
-    () => route.path,
-    (newPath) => {
-      if (newPath.startsWith("/blog/")) {
-        addScrollListener();
-      } else {
-        removeScrollListener();
-      }
-      // Scroll to top on every route change
-      scrollToTop();
-    },
+  () => route.path,
+  (newPath) => {
+    if (newPath.startsWith("/blog/")) {
+      addScrollListener();
+    } else {
+      removeScrollListener();
+    }
+    // Scroll to top on every route change
+    scrollToTop();
+  },
 );
 
 onUnmounted(() => {
-  document.body.style.cursor = "auto";
-  window.removeEventListener("mousemove", updateCursor);
+  if (cursorEnabled) {
+    document.body.style.cursor = "auto";
+    window.removeEventListener("mousemove", updateCursor);
+  }
+  if (frame) cancelAnimationFrame(frame);
   removeScrollListener();
 });
 </script>
@@ -144,7 +168,9 @@ onUnmounted(() => {
   cursor: none !important;
 }
 
-@media (max-width: 768px) {
+/* Match the JS gate: restore the native cursor wherever there is no fine
+   pointer, rather than guessing from viewport width. */
+@media (hover: none), (pointer: coarse) {
   * {
     cursor: auto !important;
   }

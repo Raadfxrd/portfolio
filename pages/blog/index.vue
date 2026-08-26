@@ -154,30 +154,7 @@ useSeoMeta({
 });
 
 // Fetch all blog posts from API
-const {
-  data: posts,
-  pending,
-  error,
-} = await useAsyncData("blog-posts", async () => {
-  try {
-    const data = await $fetch("/api/cms/posts");
-    // Filter only published posts and format them
-    if (!data || !Array.isArray(data)) return [];
-    return data
-        .filter((post: any) => post.published)
-        .map((post: any) => ({
-          ...post,
-          path: `/blog/${post.slug}`,
-        }))
-        .sort(
-            (a: any, b: any) =>
-                new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-  } catch (e) {
-    console.error("Failed to load posts:", e);
-    return [];
-  }
-});
+const { data: posts, pending, error } = await useBlogPosts();
 
 // Format date helper
 const formatDate = (date: string) => {

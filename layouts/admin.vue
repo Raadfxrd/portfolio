@@ -1,8 +1,5 @@
 <template>
-  <div
-      class="bg-background-dark flex min-h-screen flex-col"
-      @mousemove="updateCursor"
-  >
+  <div class="bg-background-dark flex min-h-screen flex-col">
     <AdminNavbar/>
     <main class="flex-1 overflow-y-auto">
       <slot/>
@@ -12,51 +9,64 @@
 </template>
 
 <script lang="ts" setup>
+import { onMounted, onUnmounted, ref } from "vue";
 import AdminNavbar from "~/components/AdminNavbar.vue";
 
 const cursor = ref<HTMLElement | null>(null);
 const cursorType = ref<"default" | "hover" | "text">("default");
 
+const TEXT_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
+const TEXT_SELECTOR =
+  "h1, h2, h3, h4, h5, h6, p, span, article, li, pre, code, [contenteditable='true']";
+
 let mouseX = 0;
 let mouseY = 0;
+let frame = 0;
 
-const updateCursor = (e: MouseEvent) => {
-  const target = e.target as HTMLElement;
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-
+const paintCursor = () => {
+  frame = 0;
   if (cursor.value) {
     cursor.value.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
   }
+};
+
+const updateCursor = (e: MouseEvent) => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+
+  // One style write per frame instead of one per event.
+  if (!frame) frame = requestAnimationFrame(paintCursor);
+
+  const target = e.target as HTMLElement;
+  if (!target?.closest) return;
 
   if (target.tagName === "IMG" || target.closest("img")) {
     cursorType.value = "default";
   } else if (target.closest("a, button, [role='button'], .cursor-hover")) {
     cursorType.value = "hover";
-  } else if (
-      ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) ||
-      getComputedStyle(target).cursor === "text" ||
-      target.closest(
-          "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, li",
-      ) ||
-      target.matches(
-          "h1, h2, h3, h4, h5, h6, p, span, div[contenteditable='true'], pre, code, article, li",
-      )
-  ) {
+  } else if (TEXT_TAGS.has(target.tagName) || target.closest(TEXT_SELECTOR)) {
     cursorType.value = "text";
   } else {
     cursorType.value = "default";
   }
 };
 
+let cursorEnabled = false;
+
 onMounted(() => {
+  cursorEnabled = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (!cursorEnabled) return;
+
   document.body.style.cursor = "none";
-  window.addEventListener("mousemove", updateCursor);
+  window.addEventListener("mousemove", updateCursor, { passive: true });
 });
 
 onUnmounted(() => {
-  document.body.style.cursor = "auto";
-  window.removeEventListener("mousemove", updateCursor);
+  if (cursorEnabled) {
+    document.body.style.cursor = "auto";
+    window.removeEventListener("mousemove", updateCursor);
+  }
+  if (frame) cancelAnimationFrame(frame);
 });
 </script>
 
@@ -65,7 +75,9 @@ onUnmounted(() => {
   cursor: none !important;
 }
 
-@media (max-width: 768px) {
+/* Match the JS gate: restore the native cursor wherever there is no fine
+   pointer, rather than guessing from viewport width. */
+@media (hover: none), (pointer: coarse) {
   * {
     cursor: auto !important;
   }

@@ -1,5 +1,7 @@
 import { sendEmail } from "~/server/utils/email";
 import { verifyRecaptcha } from "~/server/utils/recaptcha";
+import { escapeHtml, sanitizeHeaderValue } from "~/server/utils/html";
+import { rateLimit } from "~/server/utils/rateLimit";
 
 interface ContactFormBody {
   name: string;
@@ -10,6 +12,9 @@ interface ContactFormBody {
 
 export default defineEventHandler(async (event) => {
   try {
+    // 5 messages per hour per IP.
+    rateLimit(event, { key: "contact", limit: 5, windowMs: 60 * 60 * 1000 });
+
     const body = await readBody<ContactFormBody>(event);
 
     // Validate body exists
@@ -39,6 +44,14 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // Cap sizes so a single request cannot post an arbitrarily large body.
+    if (name.length > 100 || email.length > 254 || message.length > 5000) {
+      throw createError({
+        status: 400,
+        message: "One or more fields exceed the maximum allowed length",
+      });
+    }
+
     // Verify reCAPTCHA token
     const isDevelopment = process.env.NODE_ENV === "development";
     const shouldSkipRecaptcha = process.env.SKIP_RECAPTCHA === "true";
@@ -65,8 +78,15 @@ export default defineEventHandler(async (event) => {
     }
 
     // Prepare email content
-    const contactEmail = process.env.CONTACT_EMAIL || "info@borysbabas.dev";
-    const subject = `Contact request: ${name}`;
+    const contactEmail = useRuntimeConfig().contactEmail;
+    // Sanitised: a newline in `name` would otherwise let the sender inject
+    // additional email headers.
+    const subject = sanitizeHeaderValue(`Contact request: ${name}`);
+
+    // Every interpolation below lands in an HTML document, so escape first.
+    const safeName = escapeHtml(name);
+    const safeEmail = escapeHtml(email);
+    const safeMessage = escapeHtml(message).split("\n").join("<br>");
     const text = `
 Name: ${name}
 Email: ${email}
@@ -199,13 +219,13 @@ ${message}
     <div class="content">
       <div class="info-card">
         <div class="info-label">From</div>
-        <div class="info-value">${name}</div>
+        <div class="info-value">${safeName}</div>
       </div>
       
       <div class="info-card">
         <div class="info-label">Email Address</div>
         <div class="info-value">
-          <a href="mailto:${email}">${email}</a>
+          <a href="mailto:${safeEmail}">${safeEmail}</a>
         </div>
       </div>
       
@@ -213,7 +233,7 @@ ${message}
       
       <div class="message-card">
         <div class="info-label">Message</div>
-        <div class="message-content">${message.replace(/\n/g, "<br>")}</div>
+        <div class="message-content">${safeMessage}</div>
       </div>
     </div>
     <div class="footer">

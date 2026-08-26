@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
 
     // Get all active subscribers
     const subscribers = await db
-        .select()
+        .select({email: newsletter.email})
         .from(newsletter)
         .where(eq(newsletter.active, true));
 
@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
 
     // Send emails in batches to avoid overwhelming SMTP server
     const BATCH_SIZE = 10; // Send 10 emails at a time
-    const BATCH_DELAY = 5000; // Wait 2 seconds between batches
+    const BATCH_DELAY = 5000; // Wait 5 seconds between batches
 
     let successCount = 0;
     let failureCount = 0;
@@ -90,12 +90,13 @@ export default defineEventHandler(async (event) => {
             }
         });
 
-        // Wait for all emails in this batch to complete
-        const results = await Promise.allSettled(batchPromises);
+        // Wait for all emails in this batch to complete. Each task already
+        // catches its own errors and reports {success}, so these never reject.
+        const results = await Promise.all(batchPromises);
 
         // Count successes and failures
         results.forEach((result) => {
-            if (result.status === "fulfilled" && result.value.success) {
+            if (result.success) {
                 successCount++;
             } else {
                 failureCount++;

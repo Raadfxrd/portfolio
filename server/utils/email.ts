@@ -1,48 +1,81 @@
-import nodemailer from "nodemailer";
-import {Resend} from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 import crypto from "crypto";
+
+let _resend: Resend | null = null;
+let _transporter: Transporter | null = null;
 
 /**
  * Get Resend client for production emails
  */
 export function getResendClient() {
-    const apiKey = process.env.RESEND_API_KEY;
+    if (_resend) return _resend;
+
+    const apiKey = useRuntimeConfig().resendApiKey || process.env.RESEND_API_KEY;
     if (!apiKey) {
         throw new Error("RESEND_API_KEY is not set in environment variables");
     }
-    return new Resend(apiKey);
+
+    _resend = new Resend(apiKey);
+    return _resend;
 }
 
 /**
- * Get configured email transporter (for development/fallback)
+ * Get configured email transporter (for development/fallback).
+ *
+ * Cached and pooled: the newsletter blast previously built a fresh transporter
+ * (and therefore a fresh SMTP connection) for every single recipient.
  */
-export function getEmailTransporter() {
+export function getEmailTransporter(): Transporter {
+    if (_transporter) return _transporter;
+
+    const config = useRuntimeConfig();
     const isDevelopment = process.env.NODE_ENV === "development";
 
-    return nodemailer.createTransport({
-        host: isDevelopment ? "127.0.0.1" : process.env.SMTP_HOST || "127.0.0.1",
-        port: isDevelopment ? 2525 : parseInt(process.env.SMTP_PORT || "587"),
-        secure: isDevelopment ? false : process.env.SMTP_SECURE === "true",
-        auth: isDevelopment
-            ? undefined
-            : {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
+    _transporter = nodemailer.createTransport({
+        pool: true,
+        maxConnections: 3,
+        host: isDevelopment ? "127.0.0.1" : config.smtpHost,
+        port: isDevelopment ? 2525 : config.smtpPort,
+        secure: isDevelopment ? false : config.smtpSecure,
+        auth:
+            isDevelopment || !config.smtpUser
+                ? undefined
+                : {
+                      user: config.smtpUser,
+                      pass: config.smtpPass,
+                  },
     });
+
+    return _transporter;
+}
+
+function getUnsubscribeSecret(): string {
+    const secret = useRuntimeConfig().jwtSecret || process.env.JWT_SECRET;
+
+    // No fallback: a default secret would let anyone forge a token that
+    // unsubscribes any address they choose.
+    if (!secret) {
+        throw new Error(
+            "JWT_SECRET is not set; unsubscribe links cannot be signed",
+        );
+    }
+
+    return secret;
+}
+
+function signEmail(email: string): string {
+    return crypto
+        .createHmac("sha256", getUnsubscribeSecret())
+        .update(email.toLowerCase())
+        .digest("hex");
 }
 
 /**
  * Generate unsubscribe token for an email
  */
 export function generateUnsubscribeToken(email: string): string {
-    const config = useRuntimeConfig();
-    const secret = config.jwtSecret || "your-secret-key";
-    const hash = crypto
-        .createHmac("sha256", secret)
-        .update(email.toLowerCase())
-        .digest("hex");
-    return Buffer.from(`${email}:${hash}`).toString("base64url");
+    return Buffer.from(`${email}:${signEmail(email)}`).toString("base64url");
 }
 
 /**
@@ -51,23 +84,26 @@ export function generateUnsubscribeToken(email: string): string {
 export function verifyUnsubscribeToken(token: string): string | null {
     try {
         const decoded = Buffer.from(token, "base64url").toString("utf-8");
-        const [email, hash] = decoded.split(":");
 
+        // Split on the last colon: an email address cannot contain one, but
+        // splitting on the first would mangle any future format change.
+        const separator = decoded.lastIndexOf(":");
+        if (separator === -1) return null;
+
+        const email = decoded.slice(0, separator);
+        const hash = decoded.slice(separator + 1);
         if (!email || !hash) return null;
 
-        const config = useRuntimeConfig();
-        const secret = config.jwtSecret || "your-secret-key";
-        const expectedHash = crypto
-            .createHmac("sha256", secret)
-            .update(email.toLowerCase())
-            .digest("hex");
+        const expected = signEmail(email);
 
-        if (hash === expectedHash) {
-            return email;
-        }
+        // Constant-time compare so the valid digest cannot be recovered byte by
+        // byte from response timing. timingSafeEqual throws on length mismatch.
+        const provided = Buffer.from(hash, "utf-8");
+        const expectedBuf = Buffer.from(expected, "utf-8");
+        if (provided.length !== expectedBuf.length) return null;
 
-        return null;
-    } catch (e) {
+        return crypto.timingSafeEqual(provided, expectedBuf) ? email : null;
+    } catch {
         return null;
     }
 }
@@ -80,8 +116,9 @@ export function getUnsubscribeUrl(email: string): string {
     const isDevelopment = process.env.NODE_ENV === "development";
     const baseUrl = isDevelopment
         ? "http://localhost:3000"
-        : "https://borysbabas.dev";
-    return `${baseUrl}/newsletter/unsubscribe?token=${token}`;
+        : useRuntimeConfig().public.siteUrl;
+
+    return `${baseUrl}/newsletter/unsubscribe?token=${encodeURIComponent(token)}`;
 }
 
 /**
@@ -94,47 +131,19 @@ export async function sendEmail(options: {
     text: string;
     replyTo?: string;
 }) {
-    const useResend = process.env.USE_RESEND === "true";
+    const config = useRuntimeConfig();
+    const useResend = config.useResend;
     const isDevelopment = process.env.NODE_ENV === "development";
-    const fromEmail = process.env.SMTP_FROM || "noreply@borysbabas.dev";
+    const fromEmail = config.smtpFrom;
 
     // Use Resend if explicitly enabled (even in development for testing)
     if (useResend) {
-        // Use Resend for production or when explicitly enabled
         const resend = getResendClient();
 
-        console.log("📧 Sending email via Resend...");
-        console.log(`   From: ${fromEmail}`);
-        console.log(`   To: ${options.to}`);
-        console.log(`   Subject: ${options.subject}`);
-        if (options.replyTo) {
-            console.log(`   Reply-To: ${options.replyTo}`);
-        }
+        console.log(`📧 Sending email via Resend to ${options.to}`);
 
-        try {
-            const result = await resend.emails.send({
-                from: fromEmail,
-                to: options.to,
-                subject: options.subject,
-                html: options.html,
-                text: options.text,
-                replyTo: options.replyTo,
-            });
-
-            console.log("✅ Email sent successfully via Resend!");
-            console.log(`   Response:`, result);
-            return result;
-        } catch (error) {
-            console.error("❌ Failed to send email via Resend:", error);
-            throw error;
-        }
-    } else {
-        // Use nodemailer for development (Mailpit)
-        console.log("📧 Sending email via Mailpit/SMTP...");
-        const transporter = getEmailTransporter();
-
-        await transporter.sendMail({
-            from: isDevelopment ? "noreply@localhost" : fromEmail,
+        const result = await resend.emails.send({
+            from: fromEmail,
             to: options.to,
             subject: options.subject,
             html: options.html,
@@ -142,6 +151,28 @@ export async function sendEmail(options: {
             replyTo: options.replyTo,
         });
 
-        console.log("✅ Email sent successfully via SMTP!");
+        // The SDK reports delivery failures in the payload rather than by
+        // throwing, so an unchecked call here silently "succeeded".
+        if (result.error) {
+            console.error("❌ Failed to send email via Resend:", result.error);
+            throw new Error(result.error.message || "Resend rejected the email");
+        }
+
+        console.log("✅ Email sent successfully via Resend!");
+        return result;
     }
+
+    // Use nodemailer for development (Mailpit)
+    console.log(`📧 Sending email via Mailpit/SMTP to ${options.to}`);
+
+    await getEmailTransporter().sendMail({
+        from: isDevelopment ? "noreply@localhost" : fromEmail,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+        replyTo: options.replyTo,
+    });
+
+    console.log("✅ Email sent successfully via SMTP!");
 }

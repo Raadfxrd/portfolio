@@ -121,7 +121,7 @@
                   :delay="key * 80"
                   :distance="18"
               >
-                <PostCard :is-big="!key" :post="post"/>
+                <PostCard :post="post"/>
               </FadeInSection>
             </div>
           </section>
@@ -162,27 +162,24 @@ const {greeting} = useGreeting();
 const {currentTitle, isFadingOut} = useRotatingTitles();
 const {showIntro, showContent} = useIntroSequence();
 
-const {data: posts} = await useAsyncData(async () => {
-  try {
-    const data = await $fetch("/api/cms/posts");
-    if (!data || !Array.isArray(data)) return [];
-    return data
-        .filter((post: any) => post.published)
-        .map((post: any) => ({
-          ...post,
-          path: `/blog/${post.slug}`,
-        }))
-        .sort(
-            (a: any, b: any) =>
-                new Date(b.date).getTime() - new Date(a.date).getTime(),
-        );
-  } catch (e) {
-    console.error("Failed to load posts:", e);
-    return [];
-  }
-});
+const { data: posts } = await useBlogPosts();
 
 const experiences = [
+  {
+    title: "Junior AI Developer",
+    company: "Reshift",
+    period: "August 2026 - Now",
+    icon: "/img/companies/reshift.png",
+    description:
+        "Building AI-driven features for the Netherlands' largest tech-focused media company, home to brands like Kieskeurig.nl, BesteProduct.nl and ID.nl. Working on applying AI to a platform that processes millions of product prices, reviews and stock updates every day.",
+    responsibilities: [
+      "Developing and integrating AI-powered features into existing web platforms",
+      "Working with large product, pricing and review datasets across Reshift's brands",
+      "Experimenting with language models to improve content and product comparison",
+      "Collaborating with the development team on scalable, maintainable solutions",
+      "Learning and growing through Reshift's work-and-learn programme",
+    ],
+  },
   {
     title: "Software Engineer",
     company: "IRP/WOSI",

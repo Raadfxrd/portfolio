@@ -1,7 +1,7 @@
-import {db} from "~/server/database/client";
-import {blogPosts} from "~/server/database/schema";
-import {requireAuth} from "~/server/utils/auth";
-import {eq} from "drizzle-orm";
+import { db } from "~/server/database/client";
+import { blogPosts } from "~/server/database/schema";
+import { getAuthUser, requireAuth } from "~/server/utils/auth";
+import { eq } from "drizzle-orm";
 
 export default defineEventHandler(async (event) => {
     const slug = getRouterParam(event, "slug");
@@ -22,7 +22,9 @@ export default defineEventHandler(async (event) => {
             .where(eq(blogPosts.slug, slug))
             .limit(1);
 
-        if (!post) {
+        // An unpublished post must look identical to a missing one, otherwise
+        // guessing a slug reveals that a draft exists and returns its body.
+        if (!post || (!post.published && !getAuthUser(event))) {
             throw createError({
                 statusCode: 404,
                 message: "Post not found",
@@ -37,40 +39,31 @@ export default defineEventHandler(async (event) => {
         await requireAuth(event);
 
         const body = await readBody(event);
-        const {title, description, content, author, date, published} = body;
+        const { title, description, content, author, date, published } = body;
 
-        const [post] = await db
-            .select()
-            .from(blogPosts)
+        const [updatedPost] = await db
+            .update(blogPosts)
+            .set({
+                // Only overwrite fields the caller actually sent. The previous
+                // `title || post.title` form silently discarded intentional
+                // edits to an empty string and to `published: false`.
+                ...(title !== undefined && { title }),
+                ...(description !== undefined && { description }),
+                ...(content !== undefined && { content }),
+                ...(author !== undefined && { author }),
+                ...(date !== undefined && { date }),
+                ...(published !== undefined && { published }),
+                updatedAt: new Date(),
+            })
             .where(eq(blogPosts.slug, slug))
-            .limit(1);
+            .returning();
 
-        if (!post) {
+        if (!updatedPost) {
             throw createError({
                 statusCode: 404,
                 message: "Post not found",
             });
         }
-
-        await db
-            .update(blogPosts)
-            .set({
-                title: title || post.title,
-                description: description || post.description,
-                content: content || post.content,
-                author: author || post.author,
-                date: date || post.date,
-                published: published !== undefined ? published : post.published,
-                updatedAt: new Date(),
-            })
-            .where(eq(blogPosts.slug, slug));
-
-        // Fetch and return the updated post
-        const [updatedPost] = await db
-            .select()
-            .from(blogPosts)
-            .where(eq(blogPosts.slug, slug))
-            .limit(1);
 
         return updatedPost;
     }
@@ -79,20 +72,17 @@ export default defineEventHandler(async (event) => {
         // Delete post - protected
         await requireAuth(event);
 
-        const [post] = await db
-            .select()
-            .from(blogPosts)
+        const [deleted] = await db
+            .delete(blogPosts)
             .where(eq(blogPosts.slug, slug))
-            .limit(1);
+            .returning({ id: blogPosts.id });
 
-        if (!post) {
+        if (!deleted) {
             throw createError({
                 statusCode: 404,
                 message: "Post not found",
             });
         }
-
-        await db.delete(blogPosts).where(eq(blogPosts.slug, slug));
 
         return {
             success: true,

@@ -3,9 +3,16 @@
 @theme {
 	--color-background-light: #eeeeee;
 	--color-background-light-2: #dadada;
+	/* The dark surfaces the admin layout paints unconditionally, and the
+	   dark: variants used across the site. These were referenced by classes
+	   (bg-background-dark, border-border-light, border-x-border-dark) but never
+	   defined, so Tailwind generated no rule for any of them. */
+	--color-background-dark: #333333;
+	--color-background-dark-2: #565656;
 	--color-text-primary: #333333;
 	--color-text-secondary: #999999;
-	--border-light: rgb(192, 192, 192);
+	--color-border-light: rgb(192, 192, 192);
+	--color-border-dark: #4a4a4a;
 	--color-button-primary: #ececec;
 	--color-button-secondary: #b6b6b6;
 	--color-button-disabled: #cccccc;
@@ -26,7 +33,8 @@
 	--color-background-light-2: #565656;
 	--color-text-primary: #eeeeee;
 	--color-text-secondary: #bebebe;
-	--border-light: #ffffff33;
+	--color-border-light: #ffffff33;
+	--color-border-dark: #ffffff33;
 	--color-accent: #6eb1e7;
 	--color-accent-2: #faa2a2;
 	--color-button-primary: #262626;
@@ -36,9 +44,13 @@
 
 @font-face {
 	font-family: "Pearl";
-	src: url("/public/fonts/Pearl.ttf") format("truetype");
+	/* Files in public/ are served from the root: the previous "/public/fonts/..."
+	   URL 404'd, so the font never loaded and the site fell back to monospace. */
+	src: url("/fonts/Pearl.ttf") format("truetype");
 	font-weight: 500;
 	font-style: normal;
+	/* Render immediately in the fallback rather than blocking on a 4 MB TTF. */
+	font-display: swap;
 }
 
 html,

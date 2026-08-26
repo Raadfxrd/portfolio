@@ -17,10 +17,10 @@ const interests = [
   {
     title: "My Journey into Tech",
     icon: ComputerDesktopIcon,
-    text: `As a Software Engineering student at AUAS, I blend formal education with my self-taught coding journey. Working as a Software Engineer at IRP and in sales at Hifi Klubben, I continuously apply and expand my technical skills while helping others find the perfect tech and audio solutions.`,
+    text: `As a Software Engineering student at AUAS, I blend formal education with my self-taught coding journey. Working as a Junior AI Developer at Reshift and in sales at Hifi Klubben, I continuously apply and expand my technical skills while helping others find the perfect tech and audio solutions.`,
     details: [
       "Currently pursuing Software Engineering at Amsterdam University of Applied Sciences",
-      "Working as a Software Engineer at IRP, building real-world solutions",
+      "Working as a Junior AI Developer at Reshift, building real-world AI solutions",
       "Sales consultant at Hifi Klubben, helping customers with audio and tech",
       "Self-taught developer with focus on web technologies and modern frameworks",
       "Building projects that combine creativity with technical excellence",
@@ -98,7 +98,7 @@ const closeModal = () => {
 
 const quickFacts = [
   {icon: AcademicCapIcon, label: "Education", value: "Software Engineering @ AUAS"},
-  {icon: BriefcaseIcon, label: "Work", value: "Software Engineer @ IRP & Sales @ Hifi Klubben"},
+  {icon: BriefcaseIcon, label: "Work", value: "Junior AI Developer @ Reshift & Sales @ Hifi Klubben"},
   {icon: MapPinIcon, label: "Location", value: "Based in the Netherlands, from Poland"},
   {icon: PuzzlePieceIcon, label: "Gaming", value: "FPS, Sandbox, RPGs"},
   {icon: CpuChipIcon, label: "Tech", value: "Custom PCs, Mechanical Keyboards, Networking"},

@@ -1,79 +1,71 @@
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
-  compatibilityDate: "2025-12-09",
-  devtools: { enabled: true },
+    compatibilityDate: "2025-12-09",
+    devtools: {enabled: process.env.NODE_ENV !== "production"},
 
-  app: {
-    pageTransition: {
-      name: "page",
-      mode: "out-in",
-    },
-    head: {
-      title: "borysbabas.dev",
-      meta: [
-        {
-          name: "description",
-          content: "borysbabas.dev, Borys' personal portfolio.",
+    app: {
+        pageTransition: {
+            name: "page",
+            mode: "out-in",
         },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
-      ],
-      link: [
-        {
-          rel: "stylesheet",
-          type: "text/css",
-          href: "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css",
+        head: {
+            title: "borysbabas.dev",
+            meta: [
+                {
+                    name: "description",
+                    content: "borysbabas.dev, Borys' personal portfolio.",
+                },
+                {name: "viewport", content: "width=device-width, initial-scale=1"},
+            ],
+            link: [
+                // Warm up the icon CDN connection before the stylesheet request lands.
+                {rel: "preconnect", href: "https://cdn.jsdelivr.net", crossorigin: ""},
+                {
+                    rel: "stylesheet",
+                    type: "text/css",
+                    // Pinned: `@latest` re-resolves on every request and can change without notice.
+                    href: "https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/devicon.min.css",
+                },
+            ],
         },
-      ],
     },
-  },
 
-  css: ["/assets/css/main.css"],
+    css: ["/assets/css/main.css"],
 
-  vite: {
-    plugins: [tailwindcss()],
-  },
-
-  modules: ["@nuxtjs/color-mode", "@nuxt/content"],
-
-  imports: {
-    presets: [
-      {
-        from: "@nuxt/content/dist/runtime/legacy/composables",
-        imports: [""],
-      },
-    ],
-  },
-
-  colorMode: {
-    preference: "system", // default value if no preference is stored
-    fallback: "dark", // fallback value if system can't be detected
-    classSuffix: "", // Important for Tailwind's 'dark' class
-    storageKey: "theme",
-  },
-
-  runtimeConfig: {
-    // Private keys (server-side only)
-    databaseUrl: process.env.DATABASE_URL || "",
-    recaptchaSecretKey: process.env.NUXT_RECAPTCHA_SECRET_KEY || "",
-    jwtSecret:
-      process.env.JWT_SECRET ||
-      "your-super-secret-jwt-key-change-this-in-production",
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseKey: process.env.SUPABASE_ANON_KEY,
-    resendApiKey: process.env.RESEND_API_KEY || "",
-    useResend: process.env.USE_RESEND === "true",
-    smtpHost: process.env.SMTP_HOST || "127.0.0.1",
-    smtpPort: parseInt(process.env.SMTP_PORT || "2525"),
-    smtpFrom: process.env.SMTP_FROM || "noreply@borysbabas.dev",
-    contactEmail: process.env.CONTACT_EMAIL || "info@borysbabas.dev",
-
-    // Public keys (exposed to client)
-    public: {
-      githubToken: process.env.NUXT_PUBLIC_GITHUB_TOKEN || "",
-      recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || "",
-      supabaseUrl: process.env.SUPABASE_URL || "",
-      supabaseKey: process.env.SUPABASE_ANON_KEY || "",
+    vite: {
+        plugins: [tailwindcss()],
     },
-  },
+
+    modules: ["@nuxtjs/color-mode"],
+
+    colorMode: {
+        preference: "system", // default value if no preference is stored
+        fallback: "dark", // fallback value if system can't be detected
+        classSuffix: "", // Important for Tailwind's 'dark' class
+        storageKey: "theme",
+    },
+
+    runtimeConfig: {
+        // Private keys (server-side only)
+        databaseUrl: process.env.DATABASE_URL || "",
+        recaptchaSecretKey: process.env.NUXT_RECAPTCHA_SECRET_KEY || "",
+        githubToken: process.env.GITHUB_TOKEN || "",
+        jwtSecret: process.env.JWT_SECRET || "",
+        resendApiKey: process.env.RESEND_API_KEY || "",
+        useResend: process.env.USE_RESEND === "true",
+        smtpHost: process.env.SMTP_HOST || "127.0.0.1",
+        smtpPort: Number(process.env.SMTP_PORT) || 2525,
+        smtpSecure: process.env.SMTP_SECURE === "true",
+        smtpUser: process.env.SMTP_USER || "",
+        smtpPass: process.env.SMTP_PASS || "",
+        smtpFrom: process.env.SMTP_FROM || "noreply@borysbabas.dev",
+        contactEmail: process.env.CONTACT_EMAIL || "info@borysbabas.dev",
+
+        // Public keys (exposed to client)
+        public: {
+            recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || "",
+            siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://borysbabas.dev",
+        },
+    },
 });
