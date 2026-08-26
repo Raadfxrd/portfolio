@@ -184,6 +184,21 @@ const {data: posts} = await useAsyncData(async () => {
 
 const experiences = [
   {
+    title: "Junior AI Developer",
+    company: "Reshift",
+    period: "August 2026 - Now",
+    icon: "/img/companies/reshift.png",
+    description:
+        "Building AI-driven features for the Netherlands' largest tech-focused media company, home to brands like Kieskeurig.nl, BesteProduct.nl and ID.nl. Working on applying AI to a platform that processes millions of product prices, reviews and stock updates every day.",
+    responsibilities: [
+      "Developing and integrating AI-powered features into existing web platforms",
+      "Working with large product, pricing and review datasets across Reshift's brands",
+      "Experimenting with language models to improve content and product comparison",
+      "Collaborating with the development team on scalable, maintainable solutions",
+      "Learning and growing through Reshift's work-and-learn programme",
+    ],
+  },
+  {
     title: "Software Engineer",
     company: "IRP/WOSI",
     period: "February 2025 - January 2026",
