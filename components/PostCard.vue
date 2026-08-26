@@ -1,6 +1,6 @@
 <template>
   <NuxtLink
-      :to="`${post.path}`"
+      :to="post.path"
       class="group block rounded-lg bg-transparent transition-all duration-300"
   >
     <div
@@ -29,31 +29,33 @@
   </NuxtLink>
 </template>
 
-<script>
-import {defineComponent} from "@vue/composition-api";
+<script lang="ts" setup>
+import { computed } from "vue";
 
-export default defineComponent({
-  name: "PostCard",
-  props: {
-    post: {
-      type: Object,
-      required: true,
-      default: () => ({}),
-    },
-  },
-  computed: {
-    formattedDate() {
-      if (!this.post.date) return "No date found.";
+/**
+ * Previously written as an Options component importing `defineComponent` from
+ * `@vue/composition-api` — the Vue 2 backport, which is not a dependency of
+ * this project and does not resolve under Vue 3.
+ */
+interface Post {
+  path: string;
+  title: string;
+  description: string;
+  date?: string;
+}
 
-      const date = new Date(this.post.date);
-      if (isNaN(date.getTime())) return "Date couldn't be parsed correctly.";
+const props = defineProps<{ post: Post }>();
 
-      return new Intl.DateTimeFormat("nl-NL", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(date);
-    },
-  },
+const formattedDate = computed(() => {
+  if (!props.post.date) return "No date found.";
+
+  const date = new Date(props.post.date);
+  if (Number.isNaN(date.getTime())) return "Date couldn't be parsed correctly.";
+
+  return new Intl.DateTimeFormat("nl-NL", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
 });
 </script>

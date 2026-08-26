@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import {ref} from "vue";
+import {onUnmounted, ref} from "vue";
 import {gsap} from "gsap";
 
 interface Props {
@@ -90,6 +90,22 @@ const handleMouseLeave = () => {
     });
   });
 };
+
+onUnmounted(() => {
+  // Without this a pending hover timer, and any tween still running, keep
+  // touching nodes after the component is gone.
+  if (hoverTimeout.value) {
+    clearTimeout(hoverTimeout.value);
+    hoverTimeout.value = null;
+  }
+
+  const container = containerRef.value;
+  if (container) {
+    gsap.killTweensOf(
+        container.querySelectorAll(".main-image, .satellite-image"),
+    );
+  }
+});
 </script>
 
 <template>

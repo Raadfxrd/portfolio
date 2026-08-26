@@ -1,17 +1,19 @@
-import {onMounted, ref, watch} from "vue";
-import {useRoute} from "vue-router";
+import { watch } from "vue";
+import { useRoute } from "vue-router";
 
-let isNavbarVisible = ref(false);
-let isAnimationComplete = ref(false);
-
+/**
+ * Shared navbar visibility state.
+ *
+ * Backed by useState rather than module-level refs: on the server a module ref
+ * is created once per process and therefore shared by every concurrent
+ * request, so one visitor's navbar state could bleed into another's rendered
+ * HTML. useState scopes the value to the Nuxt app instance instead.
+ */
 export function useNavbarVisibility() {
     const route = useRoute();
 
-    // Singleton pattern to ensure shared state
-    if (!isNavbarVisible || !isAnimationComplete) {
-        isNavbarVisible = ref(false);
-        isAnimationComplete = ref(false);
-    }
+    const isNavbarVisible = useState("navbar-visible", () => false);
+    const isAnimationComplete = useState("navbar-animation-complete", () => false);
 
     // Watch for route changes
     watch(
@@ -23,7 +25,7 @@ export function useNavbarVisibility() {
                 isAnimationComplete.value = false;
             }
         },
-        {immediate: true},
+        { immediate: true },
     );
 
     onMounted(() => {
@@ -42,7 +44,6 @@ export function useNavbarVisibility() {
         showNavbar: () => {
             isNavbarVisible.value = true;
             isAnimationComplete.value = true;
-            localStorage.setItem("isNavbarVisible", "true");
         },
     };
 }

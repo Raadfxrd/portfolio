@@ -121,7 +121,7 @@
                   :delay="key * 80"
                   :distance="18"
               >
-                <PostCard :is-big="!key" :post="post"/>
+                <PostCard :post="post"/>
               </FadeInSection>
             </div>
           </section>
