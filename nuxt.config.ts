@@ -34,16 +34,7 @@ export default defineNuxtConfig({
         plugins: [tailwindcss()],
     },
 
-    modules: ["@nuxtjs/color-mode", "@nuxt/content"],
-
-    imports: {
-        presets: [
-            {
-                from: "@nuxt/content/dist/runtime/legacy/composables",
-                imports: ["queryCollection"],
-            },
-        ],
-    },
+    modules: ["@nuxtjs/color-mode"],
 
     colorMode: {
         preference: "system", // default value if no preference is stored
@@ -59,8 +50,6 @@ export default defineNuxtConfig({
         jwtSecret:
             process.env.JWT_SECRET ||
             "your-super-secret-jwt-key-change-this-in-production",
-        supabaseUrl: process.env.SUPABASE_URL,
-        supabaseKey: process.env.SUPABASE_ANON_KEY,
         resendApiKey: process.env.RESEND_API_KEY || "",
         useResend: process.env.USE_RESEND === "true",
         smtpHost: process.env.SMTP_HOST || "127.0.0.1",
@@ -72,8 +61,6 @@ export default defineNuxtConfig({
         public: {
             githubToken: process.env.NUXT_PUBLIC_GITHUB_TOKEN || "",
             recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || "",
-            supabaseUrl: process.env.SUPABASE_URL || "",
-            supabaseKey: process.env.SUPABASE_ANON_KEY || "",
         },
     },
 });
