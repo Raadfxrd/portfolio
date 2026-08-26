@@ -50,6 +50,7 @@ export default defineNuxtConfig({
         // Private keys (server-side only)
         databaseUrl: process.env.DATABASE_URL || "",
         recaptchaSecretKey: process.env.NUXT_RECAPTCHA_SECRET_KEY || "",
+        githubToken: process.env.GITHUB_TOKEN || "",
         jwtSecret: process.env.JWT_SECRET || "",
         resendApiKey: process.env.RESEND_API_KEY || "",
         useResend: process.env.USE_RESEND === "true",
@@ -63,8 +64,8 @@ export default defineNuxtConfig({
 
         // Public keys (exposed to client)
         public: {
-            githubToken: process.env.NUXT_PUBLIC_GITHUB_TOKEN || "",
             recaptchaSiteKey: process.env.NUXT_PUBLIC_RECAPTCHA_SITE_KEY || "",
+            siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "https://borysbabas.dev",
         },
     },
 });

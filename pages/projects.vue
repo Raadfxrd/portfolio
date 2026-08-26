@@ -1,279 +1,48 @@
 <script lang="ts" setup>
-import {onMounted, onUnmounted, ref} from "vue";
-import {marked} from "marked";
-import {ArrowTopRightOnSquareIcon, CalendarIcon, CodeBracketIcon, StarIcon,} from "@heroicons/vue/24/outline";
-import {StarIcon as StarIconSolid} from "@heroicons/vue/24/solid";
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import {
+  ArrowTopRightOnSquareIcon,
+  CalendarIcon,
+  CodeBracketIcon,
+  StarIcon,
+} from "@heroicons/vue/24/outline";
+import { StarIcon as StarIconSolid } from "@heroicons/vue/24/solid";
+import type { PublicRepo } from "~/server/api/github/repos.get";
 
-interface Repository {
-  id: number;
-  name: string;
-  description: string;
-  html_url: string;
-  homepage: string;
-  topics: string[];
-  stargazers_count: number;
-  forks_count: number;
-  language: string;
-  updated_at: string;
-  readme?: string;
-  thumbnail?: string;
-  readmeTitle?: string;
-  readmeDescription?: string;
-}
-
-const repos = ref<Repository[]>([]);
-const featuredRepo = ref<Repository | null>(null);
-const loading = ref(true);
-const error = ref<string | null>(null);
-const config = useRuntimeConfig();
 const loadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
+const loading = ref(true);
 const skeletonCount = 6;
 const minimumLoadingMs = 1000;
 
-const fetchGitHubRepos = async () => {
-  const start = Date.now();
-  try {
-    loading.value = true;
-    error.value = null;
-    if (loadingTimeout.value) {
-      clearTimeout(loadingTimeout.value);
-      loadingTimeout.value = null;
-    }
+/**
+ * The repo list is assembled and cached server-side. The browser used to call
+ * the GitHub API directly, which required shipping a token to the client and
+ * burned ~60 requests per page view against a 60-per-hour limit.
+ */
+const { data, error: fetchError } = await useFetch("/api/github/repos", {
+  key: "github-repos",
+  server: false,
+  default: (): PublicRepo[] => [],
+});
 
-    // Prepare headers with GitHub token
-    const headers: HeadersInit = {};
-    if (config.public.githubToken) {
-      headers.Authorization = `token ${config.public.githubToken}`;
-      headers.Accept = "application/vnd.github.v3+json";
-    }
+const error = computed(() =>
+  fetchError.value ? "Failed to load projects. Please try again later." : null,
+);
 
-    const reposResponse = await fetch(
-        "https://api.github.com/users/raadfxrd/repos?sort=updated&per_page=20",
-        {headers},
-    );
+// The pinned profile repo is presented separately from the grid.
+const featuredRepo = computed<PublicRepo | null>(
+  () => data.value?.find((repo) => repo.name === "raadfxrd") ?? null,
+);
 
-    if (!reposResponse.ok) {
-      if (reposResponse.status === 403) {
-        const rateLimitRemaining = reposResponse.headers.get(
-            "X-RateLimit-Remaining",
-        );
-        const rateLimitReset = reposResponse.headers.get("X-RateLimit-Reset");
-
-        if (rateLimitRemaining === "0") {
-          const resetDate = rateLimitReset
-              ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString()
-              : "unknown";
-          console.error(
-              "GitHub API rate limit exceeded. Resets at:",
-              resetDate,
-          );
-          throw new Error(
-              `GitHub API rate limit exceeded. Please try again after ${resetDate}`,
-          );
-        }
-      }
-      throw new Error("Failed to fetch repositories");
-    }
-
-    const reposData = await reposResponse.json();
-
-    const publicRepos = reposData.filter((repo: any) => !repo.fork);
-
-    const allRepos = await Promise.all(
-        publicRepos.map(async (repo: any) => {
-          try {
-            // Prepare headers for README request
-            const readmeHeaders: HeadersInit = {
-              Accept: "application/vnd.github.v3.raw",
-            };
-            if (config.public.githubToken) {
-              readmeHeaders.Authorization = `token ${config.public.githubToken}`;
-            }
-
-            const readmeResponse = await fetch(
-                `https://api.github.com/repos/raadfxrd/${repo.name}/readme`,
-                {headers: readmeHeaders},
-            );
-
-            let readme = "";
-            let thumbnail = "";
-            let readmeTitle = "";
-            let readmeDescription = "";
-
-            if (!readmeResponse.ok && readmeResponse.status === 403) {
-              const rateLimitRemaining = readmeResponse.headers.get(
-                  "X-RateLimit-Remaining",
-              );
-              if (rateLimitRemaining === "0") {
-                const rateLimitReset =
-                    readmeResponse.headers.get("X-RateLimit-Reset");
-                const resetDate = rateLimitReset
-                    ? new Date(parseInt(rateLimitReset) * 1000).toLocaleTimeString()
-                    : "unknown";
-                console.error(
-                    `GitHub API rate limit exceeded while fetching README for ${repo.name}. Resets at:`,
-                    resetDate,
-                );
-              }
-            }
-
-            if (readmeResponse.ok) {
-              readme = await readmeResponse.text();
-
-              const imageMatch = readme.match(/!\[.*?]\((.*?)\)/i);
-              if (imageMatch && imageMatch[1]) {
-                let imagePath = imageMatch[1];
-
-                if (
-                    imagePath.startsWith("http://") ||
-                    imagePath.startsWith("https://")
-                ) {
-                  thumbnail = imagePath;
-                } else {
-                  imagePath = imagePath.replace(/^\.?\//, "");
-
-                  const branch = repo.default_branch || "main";
-                  thumbnail = `https://raw.githubusercontent.com/raadfxrd/${repo.name}/${branch}/${imagePath}`;
-
-                  try {
-                    const imgCheckResponse = await fetch(thumbnail, {
-                      method: "HEAD",
-                    });
-                    if (!imgCheckResponse.ok) {
-                      const alternateBranch =
-                          branch === "main" ? "master" : "main";
-                      const alternateUrl = `https://raw.githubusercontent.com/raadfxrd/${repo.name}/${alternateBranch}/${imagePath}`;
-                      const altCheckResponse = await fetch(alternateUrl, {
-                        method: "HEAD",
-                      });
-                      if (altCheckResponse.ok) {
-                        thumbnail = alternateUrl;
-                      } else {
-                        thumbnail = "";
-                      }
-                    }
-                  } catch (err) {
-                    console.warn(`Could not verify image for ${repo.name}:`, err);
-                    thumbnail = "";
-                  }
-                }
-              }
-              const titleMatch = readme.match(/^#+\s+(.+?)$/m);
-              if (titleMatch && titleMatch[1]) {
-                readmeTitle = titleMatch[1].trim();
-              }
-              const lines = readme.split("\n");
-              let foundTitle = false;
-              const descriptionLines: string[] = [];
-              for (const line of lines) {
-                if (line.match(/^#+\s+/)) {
-                  foundTitle = true;
-                  continue;
-                }
-                if (
-                    foundTitle &&
-                    line.trim() &&
-                    !line.startsWith("!") &&
-                    !line.startsWith("[") &&
-                    !line.startsWith("#")
-                ) {
-                  descriptionLines.push(line.trim());
-                  // Collect up to 10 lines of description
-                  if (descriptionLines.length >= 10) {
-                    break;
-                  }
-                }
-              }
-              readmeDescription = descriptionLines.join(" ");
-            }
-
-            return {
-              id: repo.id,
-              name: repo.name,
-              description: repo.description || "No description available",
-              html_url: repo.html_url,
-              homepage: repo.homepage,
-              topics: repo.topics || [],
-              stargazers_count: repo.stargazers_count,
-              forks_count: repo.forks_count,
-              language: repo.language,
-              updated_at: repo.updated_at,
-              readme,
-              thumbnail,
-              readmeTitle,
-              readmeDescription,
-            };
-          } catch (err) {
-            console.error(`Error fetching README for ${repo.name}:`, err);
-            return {
-              id: repo.id,
-              name: repo.name,
-              description: repo.description || "No description available",
-              html_url: repo.html_url,
-              homepage: repo.homepage,
-              topics: repo.topics || [],
-              stargazers_count: repo.stargazers_count,
-              forks_count: repo.forks_count,
-              language: repo.language,
-              updated_at: repo.updated_at,
-              readme: "",
-              thumbnail: "",
-              readmeTitle: "",
-              readmeDescription: "",
-            };
-          }
-        }),
-    );
-
-    // Separate the featured repo from regular repos
-    const raadfxrdIndex = allRepos.findIndex(
-        (repo) => repo.name === "raadfxrd",
-    );
-    if (raadfxrdIndex !== -1) {
-      featuredRepo.value = allRepos[raadfxrdIndex];
-      repos.value = allRepos.filter((_, index) => index !== raadfxrdIndex);
-    } else {
-      repos.value = allRepos;
-    }
-  } catch (err) {
-    console.error("Error fetching GitHub repos:", err);
-    error.value = "Failed to load projects. Please try again later.";
-  } finally {
-    const elapsed = Date.now() - start;
-    const remaining = Math.max(minimumLoadingMs - elapsed, 0);
-    loadingTimeout.value = setTimeout(() => {
-      loading.value = false;
-    }, remaining);
-  }
-};
-
-const decodeHtmlEntities = (text: string) => {
-  const textarea = document.createElement("textarea");
-  textarea.innerHTML = text;
-  return textarea.value;
-};
-
-const parseReadmeText = (text: string) => {
-  if (!text) return "";
-
-  try {
-    const html = marked.parse(text) as string;
-    let plainText = html
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-
-    plainText = decodeHtmlEntities(plainText);
-
-    return plainText;
-  } catch (err) {
-    console.error("Error parsing markdown:", err);
-    return text;
-  }
-};
+const repos = computed<PublicRepo[]>(() =>
+  (data.value ?? []).filter((repo) => repo.name !== "raadfxrd"),
+);
 
 onMounted(() => {
-  fetchGitHubRepos();
+  // Hold the skeleton briefly so a fast cache hit does not flash.
+  loadingTimeout.value = setTimeout(() => {
+    loading.value = false;
+  }, minimumLoadingMs);
 });
 
 onUnmounted(() => {
@@ -383,11 +152,7 @@ const getInitials = (name: string) => {
                 <h2
                     class="gradient mb-4 w-fit text-2xl font-bold md:text-3xl lg:text-4xl"
                 >
-                  {{
-                    parseReadmeText(
-                        featuredRepo.readmeTitle || featuredRepo.name,
-                    )
-                  }}
+                  {{ featuredRepo.readmeTitle || featuredRepo.name }}
                 </h2>
                 <p
                     class="text-text-secondary mb-6 text-base leading-relaxed md:text-lg"
@@ -399,10 +164,7 @@ const getInitials = (name: string) => {
                   "
                 >
                   {{
-                    parseReadmeText(
-                        featuredRepo.readmeDescription ||
-                        featuredRepo.description,
-                    )
+                    featuredRepo.readmeDescription || featuredRepo.description
                   }}
                 </p>
 
@@ -515,12 +277,10 @@ const getInitials = (name: string) => {
               </div>
               <div class="flex flex-1 flex-col p-4">
                 <h3 class="text-text-primary mb-2 w-fit text-lg font-semibold">
-                  {{ parseReadmeText(repo.readmeTitle || repo.name) }}
+                  {{ repo.readmeTitle || repo.name }}
                 </h3>
                 <p class="text-text-secondary mb-3 line-clamp-3 text-sm">
-                  {{
-                    parseReadmeText(repo.readmeDescription || repo.description)
-                  }}
+                  {{ repo.readmeDescription || repo.description }}
                 </p>
                 <div
                     v-if="repo.topics.length > 0"
