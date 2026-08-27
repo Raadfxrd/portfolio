@@ -1,30 +1,36 @@
 <template>
   <div
-      :class="[
+    :class="[
       'bg-background-light-2 dark:bg-background-dark-2 relative flex min-h-screen w-full items-start justify-center',
       { 'h-full w-full': isInterestsPage },
     ]"
   >
     <div
-        v-if="isBlogPage"
-        :style="{ width: scrollProgress + '%' }"
-        class="fixed top-0 left-0 z-50 h-1 bg-linear-to-r from-blue-300 to-red-200 transition-all duration-150"
+      v-if="isBlogPage"
+      :style="{ width: scrollProgress + '%' }"
+      class="fixed top-0 left-0 z-50 h-1 bg-linear-to-r from-blue-300 to-red-200 transition-all duration-150"
     />
     <!-- The centre column no longer owns the scrollbar. It used to be an
          `h-screen overflow-y-auto` box, which meant the wheel only scrolled
          while the pointer was over the column itself -- over the side gutters
          nothing moved. The document scrolls now, so the whole viewport
          responds. -->
+    <!-- The hairline down each side is what separates the column from the
+         page behind it. It used to be `border-x-0 md:border-x`, which took it
+         away on exactly the screens where the column runs the full width and
+         there is nothing else marking where it starts and ends -- so on a
+         phone the content simply bled into the background. It costs no width,
+         so there is no reason to drop it. -->
     <div
-        class="bg-background-light dark:bg-background-dark border-x-border-dark relative z-0 flex min-h-screen w-full flex-col border-x-0 border-solid md:border-x lg:w-2/3"
+      class="bg-background-light dark:bg-background-dark border-x-border-dark relative z-0 flex min-h-screen w-full flex-col border-x border-solid lg:w-2/3"
     >
-      <Navbar/>
+      <Navbar />
       <main class="flex-1">
-        <slot/>
+        <slot />
       </main>
-      <Footer/>
+      <Footer />
     </div>
-    <CustomCursor/>
+    <CustomCursor />
     <SpeedInsights />
   </div>
 </template>
