@@ -28,7 +28,12 @@
           <!-- Nav Links: the inline pill is a desktop affordance; below `sm`
                it is replaced by the menu button on the right. -->
           <div
-              class="backdrop-blur-fallback border-border-light text-light hidden items-center gap-3 rounded-full border border-solid px-3 py-2 transition duration-300 sm:flex md:gap-10 md:px-8 md:py-3"
+              :class="
+                isCondensed
+                  ? 'is-condensed gap-3 px-3 py-1.5 md:gap-7 md:px-6 md:py-2'
+                  : 'gap-3 px-3 py-2 md:gap-10 md:px-8 md:py-3'
+              "
+              class="backdrop-blur-fallback border-border-light text-light hidden items-center rounded-full border border-solid transition-all duration-300 sm:flex"
           >
             <NavLinks/>
           </div>
@@ -109,7 +114,7 @@ import {
 } from "@heroicons/vue/24/outline";
 import {computed, nextTick, ref, watch} from "vue";
 import {useRoute} from "vue-router";
-import {onClickOutside, useEventListener} from "@vueuse/core";
+import {onClickOutside, useEventListener, useWindowScroll} from "@vueuse/core";
 import {useHeroPortrait} from "~/composables/useHeroPortrait";
 
 const {isNavbarVisible, isAnimationComplete} = useNavbarVisibility();
@@ -117,6 +122,11 @@ const {links} = useNavigation();
 const {logoReveal} = useHeroPortrait();
 const colorMode = useColorMode();
 const route = useRoute();
+
+const {y: scrollY} = useWindowScroll();
+
+// Far enough down that it never flickers on a stray wheel nudge.
+const isCondensed = computed(() => scrollY.value > 24);
 
 /**
  * The navbar avatar and the hero portrait are the same photograph, so rather
@@ -197,6 +207,18 @@ const icon = computed(() => {
   transition: opacity 0.25s var(--motion-ease),
   transform 0.25s var(--motion-ease);
   will-change: opacity, transform;
+}
+
+/* Condensed, the pill sits over content rather than empty page, so the
+   surface firms up to keep the links legible. */
+.is-condensed {
+  background-color: rgba(238, 238, 238, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.dark .is-condensed {
+  background-color: rgba(51, 51, 51, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .menu-enter-active,
