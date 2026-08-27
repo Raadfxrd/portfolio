@@ -72,9 +72,11 @@ const removeScrollListener = () => {
   scrollProgress.value = 0;
 };
 
-// Scroll to top on route change
+// Scroll to top on route change. `behavior: "smooth"` is a JS argument, so
+// the reduced-motion CSS cannot override it -- ask before animating.
 const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
 };
 
 onMounted(() => {

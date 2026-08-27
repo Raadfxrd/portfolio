@@ -351,3 +351,31 @@ img {
 	border-radius: 0.25rem;
 	font-size: 0.875rem;
 }
+
+/* Honour the OS-level motion preference.
+   The site leans hard on animation -- an intro overlay, per-letter reveals,
+   an infinite marquee, a pulsing badge -- which is exactly the class of
+   movement this setting exists to quiet. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+
+	/* The marquee has no meaningful end frame to snap to, so stop it where it
+	   stands rather than jumping it to -50%. */
+	.animate-scroll {
+		animation: none !important;
+	}
+
+	/* These start at opacity 0 and are revealed by the animation, so they have
+	   to be visible without one. */
+	.animate-textReveal,
+	.animate-letterReveal {
+		opacity: 1 !important;
+	}
+}

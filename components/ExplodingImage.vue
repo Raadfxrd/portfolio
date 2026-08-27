@@ -26,6 +26,15 @@ const ORBIT_RATIO = 0.375;
 const orbitRadius = (container: HTMLElement) =>
     (container.getBoundingClientRect().width || 400) * ORBIT_RATIO;
 
+/**
+ * GSAP writes inline transforms, so the global reduced-motion CSS cannot
+ * touch this one. Ask directly and hand the tweens a zero duration: the
+ * satellites still appear, they just do not fly.
+ */
+const prefersReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const handleMouseEnter = () => {
   if (hoverTimeout.value) {
     clearTimeout(hoverTimeout.value);
@@ -36,13 +45,15 @@ const handleMouseEnter = () => {
     const container = containerRef.value;
     if (!container) return;
 
+    const reduced = prefersReducedMotion();
+
     const mainImage = container.querySelector(".main-image");
     if (mainImage) {
       gsap.killTweensOf(mainImage);
 
       gsap.to(mainImage, {
         scale: 0.95,
-        duration: 0.5,
+        duration: reduced ? 0 : 0.5,
         ease: "power2.out",
       });
     }
@@ -61,8 +72,8 @@ const handleMouseEnter = () => {
           scale: 1,
           x: Math.cos((angle * Math.PI) / 180) * radius,
           y: Math.sin((angle * Math.PI) / 180) * radius,
-          duration: 0.6,
-          delay: index * 0.1,
+          duration: reduced ? 0 : 0.6,
+          delay: reduced ? 0 : index * 0.1,
           ease: "power3.out",
         });
       }
@@ -80,13 +91,15 @@ const handleMouseLeave = () => {
   const container = containerRef.value;
   if (!container) return;
 
+  const reduced = prefersReducedMotion();
+
   const mainImage = container.querySelector(".main-image");
   if (mainImage) {
     gsap.killTweensOf(mainImage);
 
     gsap.to(mainImage, {
       scale: 1,
-      duration: 0.4,
+      duration: reduced ? 0 : 0.4,
       ease: "power2.inOut",
     });
   }
@@ -99,7 +112,7 @@ const handleMouseLeave = () => {
       scale: 0.5,
       x: 0,
       y: 0,
-      duration: 0.3,
+      duration: reduced ? 0 : 0.3,
       ease: "power3.in",
     });
   });

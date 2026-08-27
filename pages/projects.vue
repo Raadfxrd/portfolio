@@ -365,6 +365,19 @@ const getInitials = (name: string) => {
   transform: scale(1.07) rotate(1deg);
 }
 
+/* Snapping instantly into a scale-and-rotate is not an improvement on
+   animating into one -- drop the movement entirely instead. */
+@media (prefers-reduced-motion: reduce) {
+  .repo-card:hover .repo-card__thumb,
+  .featured-repo:hover .featured-repo__thumb {
+    transform: none;
+  }
+
+  .featured-badge {
+    animation: none;
+  }
+}
+
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
