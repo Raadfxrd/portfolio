@@ -68,9 +68,15 @@
             </h1>
 
             <h3
-              class="text-text-secondary mx-auto mb-2 text-sm md:mx-0 md:text-sm"
+              class="text-text-secondary title-decode mx-auto mb-2 text-sm md:mx-0 md:text-sm"
             >
-              {{ currentTitle }}
+              <span
+                v-for="(entry, i) in titleChars"
+                :key="i"
+                :class="{ 'is-scrambling': entry.scrambling }"
+                class="title-decode__char"
+                >{{ entry.char }}</span
+              >
             </h3>
 
             <h3
@@ -159,7 +165,7 @@ import { useGreeting } from "~/composables/useGreeting";
 import { useHeroPortrait } from "~/composables/useHeroPortrait";
 
 const { greeting } = useGreeting();
-const { currentTitle } = useRotatingTitles();
+const { titleChars } = useRotatingTitles();
 const { showIntro, showContent } = useIntroSequence();
 
 /**
@@ -317,3 +323,30 @@ const educations = [
   },
 ];
 </script>
+
+<style scoped>
+/* `pre` keeps the spaces between words: each character is its own element, so
+   the whitespace would otherwise collapse. */
+.title-decode {
+  white-space: pre;
+}
+
+.title-decode__char {
+  display: inline-block;
+  transition: filter 0.18s ease-out, opacity 0.18s ease-out;
+}
+
+/* The blur rides along with the churn and clears as each position lands, so
+   the line sharpens from left to right behind the decode. */
+.is-scrambling {
+  filter: blur(3px);
+  opacity: 0.65;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-scrambling {
+    filter: none;
+    opacity: 1;
+  }
+}
+</style>

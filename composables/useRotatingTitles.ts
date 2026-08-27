@@ -16,6 +16,15 @@ const SCRAMBLE_CHARS = "!<>-_\\/[]{}=+*^?#";
 const SCRAMBLE_FRAMES = 18;
 const SETTLE_STAGGER = 2;
 
+export interface TitleChar {
+    char: string;
+    /** True while this position is still churning, which is what carries the blur. */
+    scrambling: boolean;
+}
+
+const toChars = (text: string): TitleChar[] =>
+    Array.from(text, (char) => ({char, scrambling: false}));
+
 // Module scope, and therefore one set of timers per browser tab. They are only
 // ever created from onMounted, which does not run on the server, so this never
 // becomes state shared between requests.
@@ -40,14 +49,16 @@ const prefersReducedMotion = () =>
  * `onMounted` ignores a returned teardown function, so the intervals kept
  * firing long after navigating away from the home page.
  *
- * Titles now decode into place character by character rather than crossfading.
- * The home page renders this in a full-width box: the scrambled glyphs are not
- * the same width as the letters they stand in for, and in a `w-fit` box that
- * reflowed the line on every frame.
+ * Titles decode into place character by character rather than crossfading, and
+ * the text is exposed per character rather than as one string so each position
+ * can carry its own blur while it churns -- the decode reads as a wave passing
+ * across the line, sharpening behind itself.
  */
 export function useRotatingTitles() {
     const index = useState("rotating-title-index", () => 0);
-    const currentTitle = useState("rotating-title", () => TITLES[0]);
+    const titleChars = useState<TitleChar[]>("rotating-title-chars", () =>
+        toChars(TITLES[0]),
+    );
 
     const stop = () => {
         if (rotateTimer) clearInterval(rotateTimer);
@@ -58,7 +69,7 @@ export function useRotatingTitles() {
 
     /** Churn each position through random glyphs until its own settle frame. */
     const scrambleTo = (next: string) => {
-        const previous = currentTitle.value;
+        const previous = titleChars.value.map((entry) => entry.char).join("");
         const length = Math.max(previous.length, next.length);
 
         const positions = Array.from({length}, (_, i) => ({
@@ -70,21 +81,27 @@ export function useRotatingTitles() {
         let frame = 0;
 
         const tick = () => {
-            let output = "";
+            const output: TitleChar[] = [];
             let settled = 0;
 
             for (const position of positions) {
                 if (frame >= position.settlesAt) {
-                    output += position.to;
+                    output.push({char: position.to, scrambling: false});
                     settled += 1;
                 } else if (frame >= position.settlesAt - SCRAMBLE_FRAMES) {
-                    output += position.to === " " ? " " : randomGlyph();
+                    // Spaces are held: a glyph appearing in the gap between two
+                    // words reads as a typo rather than as decoding.
+                    output.push(
+                        position.to === " "
+                            ? {char: " ", scrambling: false}
+                            : {char: randomGlyph(), scrambling: true},
+                    );
                 } else {
-                    output += position.from;
+                    output.push({char: position.from, scrambling: false});
                 }
             }
 
-            currentTitle.value = output;
+            titleChars.value = output;
 
             if (settled === positions.length) {
                 animationFrame = null;
@@ -105,7 +122,7 @@ export function useRotatingTitles() {
 
         // Reduced motion gets the title, not the theatre.
         if (prefersReducedMotion()) {
-            currentTitle.value = next;
+            titleChars.value = toChars(next);
             return;
         }
 
@@ -134,9 +151,9 @@ export function useRotatingTitles() {
             subscribers = 0;
             stop();
             // Leave a real title behind rather than a half-decoded one.
-            currentTitle.value = TITLES[index.value];
+            titleChars.value = toChars(TITLES[index.value]);
         }
     });
 
-    return {currentTitle};
+    return {titleChars};
 }
