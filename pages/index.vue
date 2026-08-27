@@ -27,17 +27,19 @@
           class="flex w-full max-w-5xl flex-col items-center justify-center gap-8 px-4 md:flex-row md:gap-12 md:px-6"
         >
           <!-- Portrait -->
-          <ExplodingImage
-            :main-image="'/img/raadfxrd.jpeg'"
-            :satellite-images="[
-              '/img/satelite/borys.jpeg',
-              '/img/satelite/lemur.jpeg',
-              '/img/satelite/kitteh.jpeg',
-              '/img/satelite/desk-setup.jpeg',
-              '/img/satelite/living-room.jpeg',
-            ]"
-            alt="Portrait of Borys"
-          />
+          <div :style="{ opacity: heroOpacity }">
+            <ExplodingImage
+              :main-image="'/img/raadfxrd.jpeg'"
+              :satellite-images="[
+                '/img/satelite/borys.jpeg',
+                '/img/satelite/lemur.jpeg',
+                '/img/satelite/kitteh.jpeg',
+                '/img/satelite/desk-setup.jpeg',
+                '/img/satelite/living-room.jpeg',
+              ]"
+              alt="Portrait of Borys"
+            />
+          </div>
           <!-- Text Section -->
           <div class="w-full max-w-lg text-center break-words md:text-left">
             <h1
@@ -67,13 +69,15 @@
             </h1>
 
             <h3
-              :class="{
-                'animate-fadeOut': isFadingOut,
-                'animate-fadeIn': !isFadingOut,
-              }"
-              class="text-text-secondary mx-auto mb-2 w-fit text-sm transition-transform duration-500 md:mx-0 md:text-sm"
+              class="text-text-secondary title-decode mx-auto mb-2 text-sm md:mx-0 md:text-sm"
             >
-              {{ currentTitle }}
+              <span
+                v-for="(entry, i) in titleChars"
+                :key="i"
+                :class="{ 'is-scrambling': entry.scrambling }"
+                class="title-decode__char"
+                >{{ entry.char }}</span
+              >
             </h3>
 
             <h3
@@ -147,6 +151,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computed, nextTick, onUnmounted, watch } from "vue";
 import { ArrowRightIcon } from "@heroicons/vue/24/outline";
 import TechStack from "~/components/TechStack.vue";
 import PostCard from "~/components/PostCard.vue";
@@ -157,10 +162,64 @@ import FadeInSection from "~/components/FadeInSection.vue";
 import { useIntroSequence } from "~/composables/useIntroSequence";
 import { useRotatingTitles } from "~/composables/useRotatingTitles";
 import { useGreeting } from "~/composables/useGreeting";
+import { useHeroPortrait } from "~/composables/useHeroPortrait";
 
 const { greeting } = useGreeting();
-const { currentTitle, isFadingOut } = useRotatingTitles();
+const { titleChars } = useRotatingTitles();
 const { showIntro, showContent } = useIntroSequence();
+
+/**
+ * The navbar avatar flies out of this portrait and back into it; the navbar
+ * owns the whole thing -- measurement, trigger and timeline -- and this page
+ * only has to get out of the way at the right moment.
+ *
+ * Nothing is written to the shared state here on purpose. Progress used to be
+ * reset from this setup, which fought the navbar for control of it: on arriving
+ * back home the reset landed first and snapped the avatar onto the portrait,
+ * leaving nothing to fly.
+ */
+const { flightProgress, flightActive, heroReady } = useHeroPortrait();
+
+/**
+ * Tell the navbar when the portrait is actually on screen.
+ *
+ * Not on mount: the hero sits behind the intro sequence, so on a first visit
+ * the portrait is not in the document for another second. Deferred a tick so
+ * the navbar measures against rendered markup rather than an intention.
+ */
+watch(
+  showContent,
+  async (visible) => {
+    await nextTick();
+    heroReady.value = visible;
+  },
+  { immediate: true },
+);
+
+/**
+ * The original hands over the moment the flight starts, and takes back over the
+ * moment it returns -- a straight swap rather than a crossfade.
+ *
+ * The two overlap exactly at progress zero: same photograph, same size, same
+ * place. So there is nothing to fade between, and fading anyway is what put two
+ * portraits on screen at once -- by the time the flyer reached full opacity it
+ * had already moved off and shrunk, leaving a smaller copy visibly sitting on
+ * top of this one.
+ */
+const heroOpacity = computed(() => {
+  // No flight on this page -- reduced motion, or the navbar has not measured
+  // yet. Hiding the portrait here would simply delete it.
+  if (!flightActive.value) return 1;
+
+  return flightProgress.value > 0 ? 0 : 1;
+});
+
+// Every other page shows the navbar logo outright.
+onUnmounted(() => {
+  heroReady.value = false;
+  flightProgress.value = 1;
+  flightActive.value = false;
+});
 
 const { data: posts } = await useBlogPosts();
 
@@ -278,3 +337,30 @@ const educations = [
   },
 ];
 </script>
+
+<style scoped>
+/* `pre` keeps the spaces between words: each character is its own element, so
+   the whitespace would otherwise collapse. */
+.title-decode {
+  white-space: pre;
+}
+
+.title-decode__char {
+  display: inline-block;
+  transition: filter 0.18s ease-out, opacity 0.18s ease-out;
+}
+
+/* The blur rides along with the churn and clears as each position lands, so
+   the line sharpens from left to right behind the decode. */
+.is-scrambling {
+  filter: blur(3px);
+  opacity: 0.65;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-scrambling {
+    filter: none;
+    opacity: 1;
+  }
+}
+</style>

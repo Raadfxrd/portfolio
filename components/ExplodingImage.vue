@@ -146,6 +146,7 @@ onUnmounted(() => {
           :alt="alt ?? 'Main image'"
           :src="mainImage"
           class="main-image border-border-dark col-start-1 row-start-1 h-[140px] w-[140px] sm:h-[180px] sm:w-[180px] md:h-[280px] md:w-[280px] rounded-full border-2 object-cover shadow-lg transition-shadow duration-300 hover:cursor-pointer hover:shadow-xl"
+          data-hero-portrait
           style="object-position: center top"
           @mouseenter="handleMouseEnter"
           @mouseleave="handleMouseLeave"
