@@ -13,7 +13,7 @@
         <img
             alt="Small Logo"
             class="border-border-dark h-8 w-8 shrink-0 rounded-full border hover:cursor-pointer md:h-10 md:w-10"
-            src="/public/img/raadfxrd.jpeg"
+            src="/img/raadfxrd.jpeg"
             @click="$router.push('/')"
         />
 
