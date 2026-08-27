@@ -160,7 +160,7 @@ import {DevicePhoneMobileIcon, EnvelopeIcon} from "@heroicons/vue/24/outline";
 
 const {decodeEmail, revealEmail} = useEmailObfuscation();
 
-const encodedEmail = "Ym9yeXNiYWJhc0BwbS5tZQ==";
+const encodedEmail = "aW5mb0Bib3J5c2JhYmFzLmRldg==";
 const displayEmail = computed(() => decodeEmail(encodedEmail));
 
 const handleEmailClick = () => {
