@@ -10,11 +10,6 @@
         Interests
       </NuxtLink>
     </li>
-    <li class="hidden md:block">
-      <NuxtLink class="hover:text-text-secondary transition" to="/services">
-        Services
-      </NuxtLink>
-    </li>
     <li>
       <NuxtLink class="hover:text-text-secondary transition" to="/blog">
         Blog

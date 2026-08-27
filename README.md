@@ -207,7 +207,6 @@ portfolio/
 │   ├── interests.vue          # Personal interests
 │   ├── privacy.vue            # Privacy policy
 │   ├── projects.vue           # Projects (GitHub integration)
-│   ├── services.vue           # Services offered
 │   ├── sitemap.vue            # Human-readable sitemap
 │   ├── terms.vue              # Terms of service
 │   ├── admin/login.vue        # CMS login

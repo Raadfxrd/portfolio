@@ -172,7 +172,6 @@ const navigationLinks = [
   {path: "/blog", label: "Blog"},
   {path: "/projects", label: "Projects"},
   {path: "/interests", label: "Interests"},
-  {path: "/services", label: "Services"},
   {path: "/contact", label: "Contact"},
 ];
 
