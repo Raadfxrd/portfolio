@@ -147,20 +147,81 @@ const isCondensed = ref(false);
 /*
  * Refs, not plain variables: flightStyle is a computed, and a computed only
  * re-runs when a reactive dependency changes. Held as bare `let`s, a re-measure
- * that happened to land on the same progress value -- a resize while parked at
- * the top of the page, say -- would leave the transform built from stale
- * geometry.
+ * that happened to land on the same value -- a resize while parked at the top
+ * of the page, say -- would leave the transform built from stale geometry.
  */
 
+/** Live scroll position, so the flyer can track where the portrait actually is. */
+const scrollY = ref(0);
 /** Distance the page must scroll for the portrait's centre to reach the slot. */
 const flightDistance = ref(0);
 /** Gap between the two centres horizontally, which vertical scroll never changes. */
 const flightOffsetX = ref(0);
+/** The portrait's centre in document space, which scrolling does not change. */
+const heroCentreDocY = ref(0);
+/** The slot's centre. The navbar is fixed, so this is a viewport constant. */
+const slotCentreY = ref(0);
 /** How much larger the portrait is than the slot. */
 const flightScale = ref(1);
 
-let flightFrame = 0;
+/**
+ * The flight is triggered and then runs to completion on its own clock, rather
+ * than being scrubbed frame by frame from the scroll position.
+ *
+ * Scrubbing parked the portrait wherever the scroll happened to stop. One click
+ * of a mouse wheel is roughly a quarter of the trip -- far enough for the
+ * original to have faded out, nowhere near far enough for the flyer to have
+ * arrived -- so it hung in the middle looking like a bug rather than an
+ * animation. Past the trigger it now always finishes, in both directions, and
+ * there is no resting intermediate state to land in.
+ */
+const ENGAGE_AT = 0.22;
+/** Released well below the trigger, so sitting on the boundary cannot flutter. */
+const RELEASE_AT = 0.1;
+const FLIGHT_MS = 380;
+
+let engaged = false;
+let hasNavigated = false;
+let animationFrame = 0;
+let scrollFrame = 0;
 let reducedMotion = false;
+
+const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+
+const stopFlightAnimation = () => {
+  if (animationFrame) cancelAnimationFrame(animationFrame);
+  animationFrame = 0;
+};
+
+/** Straight there, no trip: first paint, and pages with no portrait to fly. */
+const settleFlight = (target) => {
+  stopFlightAnimation();
+  flightProgress.value = target;
+};
+
+const animateFlight = (target) => {
+  if (flightProgress.value === target) return;
+
+  stopFlightAnimation();
+
+  const from = flightProgress.value;
+  const startedAt = performance.now();
+
+  const tick = (now) => {
+    const elapsed = Math.min((now - startedAt) / FLIGHT_MS, 1);
+    flightProgress.value = from + (target - from) * easeInOut(elapsed);
+
+    if (elapsed < 1) {
+      animationFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    animationFrame = 0;
+    flightProgress.value = target;
+  };
+
+  animationFrame = requestAnimationFrame(tick);
+};
 
 const measureFlight = () => {
   const hero = document.querySelector("[data-hero-portrait]");
@@ -169,7 +230,8 @@ const measureFlight = () => {
   if (reducedMotion || !hero || !slot) {
     flightDistance.value = 0;
     flightActive.value = false;
-    flightProgress.value = 1;
+    engaged = false;
+    settleFlight(1);
     return;
   }
 
@@ -179,27 +241,30 @@ const measureFlight = () => {
   const slotRect = slot.getBoundingClientRect();
 
   const heroCentreX = heroRect.left + heroRect.width / 2;
-  const heroCentreY = heroRect.top + window.scrollY + heroRect.height / 2;
   const slotCentreX = slotRect.left + slotRect.width / 2;
-  const slotCentreY = slotRect.top + slotRect.height / 2;
 
+  heroCentreDocY.value = heroRect.top + window.scrollY + heroRect.height / 2;
+  slotCentreY.value = slotRect.top + slotRect.height / 2;
   flightOffsetX.value = heroCentreX - slotCentreX;
   flightScale.value = slotRect.width > 0 ? heroRect.width / slotRect.width : 1;
-  flightDistance.value = heroCentreY - slotCentreY;
+  flightDistance.value = heroCentreDocY.value - slotCentreY.value;
   flightActive.value = flightDistance.value > 0;
 
-  updateFlight();
-};
+  scrollY.value = window.scrollY;
+  engaged =
+      flightDistance.value > 0 &&
+      scrollY.value / flightDistance.value > ENGAGE_AT;
 
-const updateFlight = () => {
-  flightFrame = 0;
+  // Arriving back on the home page, the avatar is sitting in the header where
+  // the previous page left it. Animating rather than settling is what flies it
+  // back down onto the portrait instead of blinking it there.
+  if (hasNavigated) {
+    animateFlight(engaged ? 1 : 0);
+    return;
+  }
 
-  if (flightDistance.value <= 0) return;
-
-  flightProgress.value = Math.min(
-      Math.max(window.scrollY / flightDistance.value, 0),
-      1,
-  );
+  // First paint: be where we belong without performing the trip.
+  settleFlight(engaged ? 1 : 0);
 };
 
 /**
@@ -211,29 +276,31 @@ const updateFlight = () => {
  * the two are the same image at the same size and place, fading in over the
  * first sliver of the flight is imperceptible.
  */
-const FLYER_FADE_IN = 0.08;
+const FLYER_FADE_IN = 0.06;
 
 const flightStyle = computed(() => {
   const progress = flightProgress.value;
 
-  // Landed: hand the element back to the stylesheet so the hover scale works
-  // again, rather than being overridden by an identity transform.
-  if (progress >= 1) return {};
-
-  // A page has declared a flight but the navbar has not measured it yet -- it
-  // has only just appeared, or the route just changed. Stay hidden for the
-  // tick: showing the logo at rest here means flashing it into the header a
-  // frame before it is meant to fly out of the portrait.
-  if (flightDistance.value <= 0) {
-    return {opacity: 0, pointerEvents: "none"};
-  }
+  // Landed, or nothing to fly from: hand the element back to the stylesheet so
+  // the hover scale works again rather than being overridden by an identity
+  // transform.
+  if (progress >= 1 || !flightActive.value) return {};
 
   const remaining = 1 - progress;
   const scale = 1 + (flightScale.value - 1) * remaining;
 
+  // Derived live rather than baked in when the flight was triggered: progress
+  // runs on its own clock now, so the portrait goes on moving underneath while
+  // the flight plays. Clamped at zero so scrolling clean past the hero
+  // mid-flight cannot throw the flyer up above the header.
+  const gap = Math.max(
+      heroCentreDocY.value - scrollY.value - slotCentreY.value,
+      0,
+  );
+
   return {
     transform: `translate3d(${flightOffsetX.value * remaining}px, ${
-        flightDistance.value * remaining
+        gap * remaining
     }px, 0) scale(${scale})`,
     opacity: Math.min(progress / FLYER_FADE_IN, 1),
     // The border scales with everything else, so counter it to keep the ring
@@ -247,10 +314,28 @@ const flightStyle = computed(() => {
 
 /* ------------------------------------------------------------------------- */
 
-const onScroll = () => {
+const onScrollFrame = () => {
+  scrollFrame = 0;
+  scrollY.value = window.scrollY;
+
   // Far enough down that it never flickers on a stray wheel nudge.
-  isCondensed.value = window.scrollY > 24;
-  if (!flightFrame) flightFrame = requestAnimationFrame(updateFlight);
+  isCondensed.value = scrollY.value > 24;
+
+  if (!flightActive.value || flightDistance.value <= 0) return;
+
+  const ratio = scrollY.value / flightDistance.value;
+
+  if (!engaged && ratio > ENGAGE_AT) {
+    engaged = true;
+    animateFlight(1);
+  } else if (engaged && ratio < RELEASE_AT) {
+    engaged = false;
+    animateFlight(0);
+  }
+};
+
+const onScroll = () => {
+  if (!scrollFrame) scrollFrame = requestAnimationFrame(onScrollFrame);
 };
 
 /**
@@ -291,6 +376,26 @@ watch(
     () => route.path,
     async () => {
       closeMenu(false);
+      // Marks every later measurement as a navigation rather than first paint,
+      // which is what makes the avatar fly back down instead of blinking.
+      hasNavigated = true;
+
+      // Leaving the page that owns the portrait.
+      //
+      // The outgoing page is still in the DOM at this point -- the transition
+      // runs out-in, so it does not unmount for another beat -- which means
+      // re-measuring here would find the departing portrait and aim the flight
+      // at wherever the page happened to be scrolled. At the top of the page
+      // that is a target of 0, which parks the avatar invisibly over a portrait
+      // that is fading away and leaves the header empty until the old page
+      // finally unmounts. Send it home instead, and do not measure against a
+      // page on its way out.
+      if (flightActive.value) {
+        engaged = true;
+        animateFlight(1);
+        return;
+      }
+
       await nextTick();
       measureFlight();
     },
@@ -310,14 +415,16 @@ onMounted(() => {
   window.addEventListener("scroll", onScroll, {passive: true});
   window.addEventListener("resize", measureFlight, {passive: true});
 
-  onScroll();
+  scrollY.value = window.scrollY;
+  isCondensed.value = scrollY.value > 24;
   measureFlight();
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("scroll", onScroll);
   window.removeEventListener("resize", measureFlight);
-  if (flightFrame) cancelAnimationFrame(flightFrame);
+  if (scrollFrame) cancelAnimationFrame(scrollFrame);
+  stopFlightAnimation();
 });
 
 // Default to 'system' if no preference is set

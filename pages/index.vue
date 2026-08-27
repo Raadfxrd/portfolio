@@ -27,7 +27,10 @@
           class="flex w-full max-w-5xl flex-col items-center justify-center gap-8 px-4 md:flex-row md:gap-12 md:px-6"
         >
           <!-- Portrait -->
-          <div :style="{ opacity: heroOpacity }">
+          <div
+            :style="{ opacity: heroOpacity }"
+            class="transition-opacity duration-100 ease-linear"
+          >
             <ExplodingImage
               :main-image="'/img/raadfxrd.jpeg'"
               :satellite-images="[
@@ -169,24 +172,27 @@ const { titleChars } = useRotatingTitles();
 const { showIntro, showContent } = useIntroSequence();
 
 /**
- * The navbar avatar flies out of this portrait as the page scrolls; the navbar
- * owns that measurement and this page only has to get out of its way.
+ * The navbar avatar flies out of this portrait and back into it; the navbar
+ * owns the whole thing -- measurement, trigger and timeline -- and this page
+ * only has to get out of the way at the right moment.
  *
- * Set in setup rather than onMounted so the flight is already at its start by
- * the time the navbar appears, instead of the logo visibly jumping into place.
+ * Nothing is written to the shared state here on purpose. Progress used to be
+ * reset from this setup, which fought the navbar for control of it: on arriving
+ * back home the reset landed first and snapped the avatar onto the portrait,
+ * leaving nothing to fly.
  */
 const { flightProgress, flightActive } = useHeroPortrait();
 
-flightProgress.value = 0;
-
 /**
- * The flyer takes over from the original early in the trip. Holding the
- * portrait for the first sliver lets the flyer fade up on top of it first, so
- * the exchange happens between two identical images in the same place and
- * never shows a gap.
+ * The flyer takes over from the original a moment into the trip.
+ *
+ * Holding the portrait until the flyer has finished fading up means the
+ * exchange happens between two identical images in the same place, so there is
+ * never a frame with no portrait and never a visible double. Run in reverse it
+ * is the hand-back, as the avatar returns and the original fades in under it.
  */
-const HERO_FADE_START = 0.05;
-const HERO_FADE_END = 0.22;
+const HERO_FADE_START = 0.1;
+const HERO_FADE_END = 0.35;
 
 const heroOpacity = computed(() => {
   // No flight on this page -- reduced motion, or the navbar has not measured
