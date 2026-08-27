@@ -53,14 +53,19 @@
 	font-display: swap;
 }
 
+/* Kept on <html> only. Setting overflow-x on <body> as well turns the body
+   into its own scroll container, which is half of what made the page scroll
+   only while the pointer was over the centre column. */
+html {
+	overflow-x: hidden;
+}
+
 html,
 body {
 	margin: 0;
 	padding: 0;
-	height: 100%;
+	min-height: 100%;
 	width: 100%;
-	overflow-x: hidden;
-	overflow-y: auto;
 	z-index: 0;
 	font-family: var(--font-family-default), sans-serif;
 	background-color: var(--color-background-light);
