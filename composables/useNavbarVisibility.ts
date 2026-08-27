@@ -19,11 +19,24 @@ export function useNavbarVisibility() {
     watch(
         () => route.path,
         (newPath) => {
-            if (newPath === "/") {
-                // Hide navbar when navigating to home page
-                isNavbarVisible.value = false;
-                isAnimationComplete.value = false;
+            if (newPath !== "/") return;
+
+            // The navbar is only pulled down for the intro sequence, which
+            // plays once per browser and reveals it on the way out.
+            //
+            // This used to fire on every arrival at the home page, intro or
+            // not. Clicking the logo to come home therefore tore the navbar
+            // out of the document and rebuilt it a page transition later --
+            // it visibly vanished and came back, taking the logo with it.
+            if (
+                import.meta.client &&
+                localStorage.getItem("hasPlayedIntro") === "true"
+            ) {
+                return;
             }
+
+            isNavbarVisible.value = false;
+            isAnimationComplete.value = false;
         },
         { immediate: true },
     );

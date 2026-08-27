@@ -151,7 +151,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onUnmounted } from "vue";
+import { computed, nextTick, onUnmounted, watch } from "vue";
 import { ArrowRightIcon } from "@heroicons/vue/24/outline";
 import TechStack from "~/components/TechStack.vue";
 import PostCard from "~/components/PostCard.vue";
@@ -178,7 +178,23 @@ const { showIntro, showContent } = useIntroSequence();
  * back home the reset landed first and snapped the avatar onto the portrait,
  * leaving nothing to fly.
  */
-const { flightProgress, flightActive } = useHeroPortrait();
+const { flightProgress, flightActive, heroReady } = useHeroPortrait();
+
+/**
+ * Tell the navbar when the portrait is actually on screen.
+ *
+ * Not on mount: the hero sits behind the intro sequence, so on a first visit
+ * the portrait is not in the document for another second. Deferred a tick so
+ * the navbar measures against rendered markup rather than an intention.
+ */
+watch(
+  showContent,
+  async (visible) => {
+    await nextTick();
+    heroReady.value = visible;
+  },
+  { immediate: true },
+);
 
 /**
  * The original hands over the moment the flight starts, and takes back over the
@@ -200,6 +216,7 @@ const heroOpacity = computed(() => {
 
 // Every other page shows the navbar logo outright.
 onUnmounted(() => {
+  heroReady.value = false;
   flightProgress.value = 1;
   flightActive.value = false;
 });

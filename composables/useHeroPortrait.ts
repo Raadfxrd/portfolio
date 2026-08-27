@@ -22,5 +22,17 @@ export function useHeroPortrait() {
     const flightProgress = useState("hero-flight-progress", () => 1);
     const flightActive = useState("hero-flight-active", () => false);
 
-    return {flightProgress, flightActive};
+    /**
+     * Whether the portrait is currently in the document.
+     *
+     * The navbar needs a signal to measure against, and it cannot take one from
+     * the route: the page transition runs out-in, so at the moment the route
+     * changes the incoming page has not mounted and the outgoing one still has
+     * its portrait in the DOM. This flips when the portrait is genuinely on
+     * screen -- which on a first visit is when the intro hands over, not when
+     * the page mounts.
+     */
+    const heroReady = useState("hero-portrait-ready", () => false);
+
+    return {flightProgress, flightActive, heroReady};
 }

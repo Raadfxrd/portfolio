@@ -119,7 +119,7 @@ import {onClickOutside, useEventListener} from "@vueuse/core";
 
 const {isNavbarVisible, isAnimationComplete} = useNavbarVisibility();
 const {links} = useNavigation();
-const {flightProgress, flightActive} = useHeroPortrait();
+const {flightProgress, flightActive, heroReady} = useHeroPortrait();
 const colorMode = useColorMode();
 const route = useRoute();
 
@@ -400,10 +400,19 @@ watch(
     },
 );
 
-// The navbar is hidden until the intro finishes, so there is no slot to measure
-// against until it appears.
+// The navbar is hidden until the intro finishes, so on a first visit there is
+// no slot to measure against until it appears.
 watch(isNavbarVisible, async (visible) => {
   if (!visible) return;
+  await nextTick();
+  measureFlight();
+});
+
+// The portrait arriving is the other half of that signal, and the important one
+// now that the navbar survives the trip home: it stays mounted, so its own
+// visibility watcher never fires and this is the only thing that knows there is
+// something to fly again.
+watch(heroReady, async () => {
   await nextTick();
   measureFlight();
 });
