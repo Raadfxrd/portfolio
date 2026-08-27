@@ -42,21 +42,29 @@
           </div>
           <!-- Text Section -->
           <div class="w-full max-w-lg text-center break-words md:text-left">
+            <!-- Not `.gradient`: each letter is transformed by its own reveal
+                 animation, and WebKit drops transformed descendants out of an
+                 ancestor's `background-clip: text` -- which left the whole
+                 greeting invisible on iOS. The sweep is baked per letter
+                 instead. See useGreeting. -->
             <h1
-              class="gradient mb-2 flex flex-wrap justify-center gap-2 text-xl font-bold sm:text-2xl md:justify-start md:text-3xl"
+              class="mb-2 flex flex-wrap justify-center gap-2 text-xl font-bold sm:text-2xl md:justify-start md:text-3xl"
             >
               <span
-                v-for="(word, wi) in greeting.split(' ')"
+                v-for="(word, wi) in greetingWords"
                 :key="wi"
                 class="inline-flex"
               >
                 <span
-                  v-for="(letter, li) in word.split('')"
+                  v-for="(letter, li) in word.letters"
                   :key="li"
-                  :style="{ animationDelay: `${wi * 600 + li * 50}ms` }"
+                  :style="{
+                    animationDelay: letter.delay,
+                    color: letter.colour,
+                  }"
                   class="animate-letterReveal inline-block opacity-0"
                 >
-                  {{ letter }}
+                  {{ letter.char }}
                 </span>
                 <span class="w-1.5"></span>
               </span>
@@ -164,7 +172,7 @@ import { useRotatingTitles } from "~/composables/useRotatingTitles";
 import { useGreeting } from "~/composables/useGreeting";
 import { useHeroPortrait } from "~/composables/useHeroPortrait";
 
-const { greeting } = useGreeting();
+const { greetingWords } = useGreeting();
 const { titleChars } = useRotatingTitles();
 const { showIntro, showContent } = useIntroSequence();
 
@@ -347,7 +355,9 @@ const educations = [
 
 .title-decode__char {
   display: inline-block;
-  transition: filter 0.18s ease-out, opacity 0.18s ease-out;
+  transition:
+    filter 0.18s ease-out,
+    opacity 0.18s ease-out;
 }
 
 /* The blur rides along with the churn and clears as each position lands, so
