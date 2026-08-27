@@ -8,6 +8,7 @@ import {
 } from "@heroicons/vue/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/vue/24/solid";
 import type { PublicRepo } from "~/server/api/github/repos.get";
+import SkeletonCard from "~/components/SkeletonCard.vue";
 
 const loadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
 const minimumDelayPassed = ref(false);
@@ -102,21 +103,7 @@ const getInitials = (name: string) => {
           v-if="loading"
           class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
       >
-        <div
-            v-for="n in skeletonCount"
-            :key="`skeleton-${n}`"
-            class="skeleton-card"
-        >
-          <div class="skeleton skeleton-thumb"/>
-          <div class="skeleton skeleton-title"/>
-          <div class="skeleton skeleton-line"/>
-          <div class="skeleton skeleton-line short"/>
-          <div class="skeleton-chip-row">
-            <span class="skeleton skeleton-chip"/>
-            <span class="skeleton skeleton-chip"/>
-          </div>
-          <div class="skeleton skeleton-meta"/>
-        </div>
+        <SkeletonCard v-for="n in skeletonCount" :key="`skeleton-${n}`"/>
       </div>
       <div
           v-else-if="error"
@@ -397,81 +384,6 @@ const getInitials = (name: string) => {
   font-weight: 800;
   font-size: 1.4rem;
   letter-spacing: 0.08em;
-}
-
-.skeleton-card {
-  background: var(--color-background-light);
-  border: 1px solid var(--border-light);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.skeleton {
-  position: relative;
-  overflow: hidden;
-  background: rgba(var(--color-text-primary-rgb), 0.06);
-  border-radius: 0.5rem;
-}
-
-.skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-      120deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.35) 50%,
-      transparent 100%
-  );
-  transform: translateX(-100%);
-  animation: shimmer 1.2s ease-in-out infinite;
-}
-
-.skeleton-thumb {
-  height: 140px;
-  border-radius: 0.65rem;
-}
-
-.skeleton-title {
-  height: 18px;
-  width: 70%;
-}
-
-.skeleton-line {
-  height: 12px;
-  width: 100%;
-}
-
-.skeleton-line.short {
-  width: 60%;
-}
-
-.skeleton-chip-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.skeleton-chip {
-  height: 20px;
-  width: 64px;
-  border-radius: 9999px;
-}
-
-.skeleton-meta {
-  height: 12px;
-  width: 55%;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
 }
 
 .featured-repo {

@@ -40,6 +40,9 @@
 	--color-button-primary: #262626;
 	--color-button-secondary: #7e7e7e;
 	--color-button-disabled: #cccccc;
+	/* Was only defined on :root, so the skeletons tinted themselves black
+	   against a dark surface and all but disappeared. */
+	--color-text-primary-rgb: 255, 255, 255;
 }
 
 @font-face {
@@ -350,6 +353,38 @@ img {
 	padding: 0.125rem 0.375rem;
 	border-radius: 0.25rem;
 	font-size: 0.875rem;
+}
+
+/* Loading skeletons. The base and the shimmer live here so every surface that
+   waits on data can look the same; each component supplies its own shapes. */
+.skeleton {
+	position: relative;
+	overflow: hidden;
+	background: rgba(var(--color-text-primary-rgb), 0.06);
+	border-radius: 0.5rem;
+}
+
+.skeleton::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+			120deg,
+			transparent 0%,
+			rgba(255, 255, 255, 0.35) 50%,
+			transparent 100%
+	);
+	transform: translateX(-100%);
+	animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
 }
 
 /* Honour the OS-level motion preference.
