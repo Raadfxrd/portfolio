@@ -16,8 +16,14 @@
              therefore shared out to the logo and the controls as well, and
              hovering it slid the whole navbar around. Letting the flanks
              absorb the change instead pins the logo to one edge and the
-             controls to the other, and centres the pill between them. -->
-        <div class="flex w-full items-center gap-2">
+             controls to the other, and centres the pill between them.
+
+             The inset is proportional so it scales with the column, and it
+             only applies from `lg` up. Below that the column is genuinely
+             narrow -- at the `md` breakpoint the expanded pill, the logo and
+             the controls together already want most of it -- and padding there
+             would squeeze the links rather than give anything room. -->
+        <div class="flex w-full items-center gap-2 lg:px-[7%]">
           <div class="flex flex-1 justify-start">
             <!-- Small Logo.
                  The span is never transformed: it holds the slot in the flow
