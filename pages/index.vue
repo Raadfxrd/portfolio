@@ -27,18 +27,19 @@
           class="flex w-full max-w-5xl flex-col items-center justify-center gap-8 px-4 md:flex-row md:gap-12 md:px-6"
         >
           <!-- Portrait -->
-          <ExplodingImage
-            ref="portraitRef"
-            :main-image="'/img/raadfxrd.jpeg'"
-            :satellite-images="[
-              '/img/satelite/borys.jpeg',
-              '/img/satelite/lemur.jpeg',
-              '/img/satelite/kitteh.jpeg',
-              '/img/satelite/desk-setup.jpeg',
-              '/img/satelite/living-room.jpeg',
-            ]"
-            alt="Portrait of Borys"
-          />
+          <div :style="{ opacity: heroOpacity }">
+            <ExplodingImage
+              :main-image="'/img/raadfxrd.jpeg'"
+              :satellite-images="[
+                '/img/satelite/borys.jpeg',
+                '/img/satelite/lemur.jpeg',
+                '/img/satelite/kitteh.jpeg',
+                '/img/satelite/desk-setup.jpeg',
+                '/img/satelite/living-room.jpeg',
+              ]"
+              alt="Portrait of Borys"
+            />
+          </div>
           <!-- Text Section -->
           <div class="w-full max-w-lg text-center break-words md:text-left">
             <h1
@@ -150,8 +151,7 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref } from "vue";
-import { useIntersectionObserver } from "@vueuse/core";
+import { computed, onUnmounted } from "vue";
 import { ArrowRightIcon } from "@heroicons/vue/24/outline";
 import TechStack from "~/components/TechStack.vue";
 import PostCard from "~/components/PostCard.vue";
@@ -169,42 +169,40 @@ const { titleChars } = useRotatingTitles();
 const { showIntro, showContent } = useIntroSequence();
 
 /**
- * Hand the navbar logo over to the hero portrait while the portrait is on
- * screen. Set here in setup rather than onMounted so the logo is already out
- * of the way by the time the navbar appears, instead of popping out of view.
+ * The navbar avatar flies out of this portrait as the page scrolls; the navbar
+ * owns that measurement and this page only has to get out of its way.
+ *
+ * Set in setup rather than onMounted so the flight is already at its start by
+ * the time the navbar appears, instead of the logo visibly jumping into place.
  */
-const { logoReveal } = useHeroPortrait();
-// Untyped: this holds a component instance, which vueuse resolves to the
-// component's root element.
-const portraitRef = ref();
+const { flightProgress, flightActive } = useHeroPortrait();
 
-logoReveal.value = 0;
+flightProgress.value = 0;
 
-// Enough thresholds to read as a scrub rather than a series of steps; the CSS
-// transition on the logo smooths what is left.
-const REVEAL_THRESHOLDS = Array.from({ length: 21 }, (_, i) => i / 20);
+/**
+ * The flyer takes over from the original early in the trip. Holding the
+ * portrait for the first sliver lets the flyer fade up on top of it first, so
+ * the exchange happens between two identical images in the same place and
+ * never shows a gap.
+ */
+const HERO_FADE_START = 0.05;
+const HERO_FADE_END = 0.22;
 
-// Registered in setup rather than inside onMounted so it binds to the
-// component's effect scope and tears itself down with the page.
-const { stop: stopWatchingPortrait } = useIntersectionObserver(
-  portraitRef,
-  ([entry]) => {
-    logoReveal.value = 1 - entry.intersectionRatio;
-  },
-  { threshold: REVEAL_THRESHOLDS },
-);
+const heroOpacity = computed(() => {
+  // No flight on this page -- reduced motion, or the navbar has not measured
+  // yet. Fading the portrait out here would simply delete it.
+  if (!flightActive.value) return 1;
 
-onMounted(() => {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    // Leave the logo in place rather than animating it in and out.
-    stopWatchingPortrait();
-    logoReveal.value = 1;
-  }
+  const faded =
+    (flightProgress.value - HERO_FADE_START) / (HERO_FADE_END - HERO_FADE_START);
+
+  return Math.min(Math.max(1 - faded, 0), 1);
 });
 
-// Every other page shows the logo outright.
+// Every other page shows the navbar logo outright.
 onUnmounted(() => {
-  logoReveal.value = 1;
+  flightProgress.value = 1;
+  flightActive.value = false;
 });
 
 const { data: posts } = await useBlogPosts();
