@@ -27,10 +27,7 @@
           class="flex w-full max-w-5xl flex-col items-center justify-center gap-8 px-4 md:flex-row md:gap-12 md:px-6"
         >
           <!-- Portrait -->
-          <div
-            :style="{ opacity: heroOpacity }"
-            class="transition-opacity duration-100 ease-linear"
-          >
+          <div :style="{ opacity: heroOpacity }">
             <ExplodingImage
               :main-image="'/img/raadfxrd.jpeg'"
               :satellite-images="[
@@ -184,25 +181,21 @@ const { showIntro, showContent } = useIntroSequence();
 const { flightProgress, flightActive } = useHeroPortrait();
 
 /**
- * The flyer takes over from the original a moment into the trip.
+ * The original hands over the moment the flight starts, and takes back over the
+ * moment it returns -- a straight swap rather than a crossfade.
  *
- * Holding the portrait until the flyer has finished fading up means the
- * exchange happens between two identical images in the same place, so there is
- * never a frame with no portrait and never a visible double. Run in reverse it
- * is the hand-back, as the avatar returns and the original fades in under it.
+ * The two overlap exactly at progress zero: same photograph, same size, same
+ * place. So there is nothing to fade between, and fading anyway is what put two
+ * portraits on screen at once -- by the time the flyer reached full opacity it
+ * had already moved off and shrunk, leaving a smaller copy visibly sitting on
+ * top of this one.
  */
-const HERO_FADE_START = 0.1;
-const HERO_FADE_END = 0.35;
-
 const heroOpacity = computed(() => {
   // No flight on this page -- reduced motion, or the navbar has not measured
-  // yet. Fading the portrait out here would simply delete it.
+  // yet. Hiding the portrait here would simply delete it.
   if (!flightActive.value) return 1;
 
-  const faded =
-    (flightProgress.value - HERO_FADE_START) / (HERO_FADE_END - HERO_FADE_START);
-
-  return Math.min(Math.max(1 - faded, 0), 1);
+  return flightProgress.value > 0 ? 0 : 1;
 });
 
 // Every other page shows the navbar logo outright.

@@ -267,17 +267,6 @@ const measureFlight = () => {
   settleFlight(engaged ? 1 : 0);
 };
 
-/**
- * How far into the flight the flyer has faded up.
- *
- * It starts fully transparent rather than opaque. At rest it covers the hero
- * exactly, and an opaque copy there would mask the portrait's own
- * explode-on-hover -- the satellites would fly out from behind a lid. Because
- * the two are the same image at the same size and place, fading in over the
- * first sliver of the flight is imperceptible.
- */
-const FLYER_FADE_IN = 0.06;
-
 const flightStyle = computed(() => {
   const progress = flightProgress.value;
 
@@ -302,7 +291,17 @@ const flightStyle = computed(() => {
     transform: `translate3d(${flightOffsetX.value * remaining}px, ${
         gap * remaining
     }px, 0) scale(${scale})`,
-    opacity: Math.min(progress / FLYER_FADE_IN, 1),
+    // Binary, not a fade.
+    //
+    // At rest the flyer must be invisible: it covers the portrait exactly, and
+    // an opaque copy there would hide the portrait's own explode-on-hover
+    // behind a lid. The instant the flight starts it must be the only one
+    // visible. There is nothing to crossfade between -- at that instant it is
+    // the same photograph at the same size in the same place, so the exchange
+    // is invisible on its own. Fading them across each other is what showed
+    // two: by the time a fade completes the flyer has already moved off and
+    // shrunk, so it reads as a second, smaller portrait laid over the first.
+    opacity: progress > 0 ? 1 : 0,
     // The border scales with everything else, so counter it to keep the ring
     // at the same visual weight as the hero's while it flies.
     borderWidth: `${2 / scale}px`,
