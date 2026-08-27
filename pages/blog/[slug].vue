@@ -64,10 +64,16 @@ const formatDate = (date: string) => {
     <!-- Loading State -->
     <div
         v-if="!post && !error"
-        class="flex min-h-[50vh] items-center justify-center"
+        aria-hidden="true"
+        class="mx-auto max-w-3xl space-y-6 md:space-y-8"
     >
-      <div class="text-text-secondary text-center">
-        <div class="mb-4 text-lg md:text-xl">Loading post...</div>
+      <div class="skeleton h-9 w-4/5 md:h-12"/>
+      <div class="border-border-light flex justify-between border-b pb-3">
+        <span class="skeleton h-4 w-28"/>
+        <span class="skeleton h-4 w-32"/>
+      </div>
+      <div class="space-y-3">
+        <div v-for="n in 8" :key="`line-${n}`" :class="n % 4 === 0 ? 'w-3/5' : 'w-full'" class="skeleton h-4"/>
       </div>
     </div>
 

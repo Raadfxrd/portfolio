@@ -8,22 +8,39 @@ import {
 } from "@heroicons/vue/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/vue/24/solid";
 import type { PublicRepo } from "~/server/api/github/repos.get";
+import SkeletonCard from "~/components/SkeletonCard.vue";
 
 const loadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const loading = ref(true);
+const minimumDelayPassed = ref(false);
 const skeletonCount = 6;
-const minimumLoadingMs = 1000;
+const minimumLoadingMs = 300;
 
 /**
  * The repo list is assembled and cached server-side. The browser used to call
  * the GitHub API directly, which required shipping a token to the client and
  * burned ~60 requests per page view against a 60-per-hour limit.
+ *
+ * Lazy, and deliberately not awaited: an awaited client-only useFetch suspends
+ * this component's setup, so clicking "Projects" in the navbar sat on the old
+ * page until GitHub answered. Lazy swaps the page in immediately and the
+ * skeleton covers the wait.
  */
-const { data, error: fetchError } = await useFetch("/api/github/repos", {
+const {
+  data,
+  status,
+  error: fetchError,
+} = useLazyFetch("/api/github/repos", {
   key: "github-repos",
   server: false,
   default: (): PublicRepo[] => [],
 });
+
+const loading = computed(
+  () =>
+    !minimumDelayPassed.value ||
+    status.value === "idle" ||
+    status.value === "pending",
+);
 
 const error = computed(() =>
   fetchError.value ? "Failed to load projects. Please try again later." : null,
@@ -41,7 +58,7 @@ const repos = computed<PublicRepo[]>(() =>
 onMounted(() => {
   // Hold the skeleton briefly so a fast cache hit does not flash.
   loadingTimeout.value = setTimeout(() => {
-    loading.value = false;
+    minimumDelayPassed.value = true;
   }, minimumLoadingMs);
 });
 
@@ -86,21 +103,7 @@ const getInitials = (name: string) => {
           v-if="loading"
           class="grid gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
       >
-        <div
-            v-for="n in skeletonCount"
-            :key="`skeleton-${n}`"
-            class="skeleton-card"
-        >
-          <div class="skeleton skeleton-thumb"/>
-          <div class="skeleton skeleton-title"/>
-          <div class="skeleton skeleton-line"/>
-          <div class="skeleton skeleton-line short"/>
-          <div class="skeleton-chip-row">
-            <span class="skeleton skeleton-chip"/>
-            <span class="skeleton skeleton-chip"/>
-          </div>
-          <div class="skeleton skeleton-meta"/>
-        </div>
+        <SkeletonCard v-for="n in skeletonCount" :key="`skeleton-${n}`"/>
       </div>
       <div
           v-else-if="error"
@@ -133,7 +136,7 @@ const getInitials = (name: string) => {
                   <img
                       :alt="`${featuredRepo.name} thumbnail`"
                       :src="featuredRepo.thumbnail"
-                      class="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                      class="featured-repo__thumb h-full w-full object-cover"
                       @error="
                       (e) =>
                         ((e.target as HTMLImageElement).style.display = 'none')
@@ -219,9 +222,7 @@ const getInitials = (name: string) => {
                       target="_blank"
                   >
                     <span>View on GitHub</span>
-                    <ArrowTopRightOnSquareIcon
-                        class="ml-1 inline-block h-4 w-4"
-                    />
+                    <ArrowTopRightOnSquareIcon class="h-4 w-4"/>
                   </a>
                   <a
                       v-if="featuredRepo.homepage"
@@ -231,9 +232,7 @@ const getInitials = (name: string) => {
                       target="_blank"
                   >
                     <span>Live Demo</span>
-                    <ArrowTopRightOnSquareIcon
-                        class="ml-1 inline-block h-4 w-4"
-                    />
+                    <ArrowTopRightOnSquareIcon class="h-4 w-4"/>
                   </a>
                 </div>
               </div>
@@ -251,7 +250,7 @@ const getInitials = (name: string) => {
               class="h-full"
           >
             <article
-                class="bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                class="repo-card bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             >
               <div
                   v-if="repo.thumbnail"
@@ -260,7 +259,9 @@ const getInitials = (name: string) => {
                 <img
                     :alt="`${repo.name} thumbnail`"
                     :src="repo.thumbnail"
-                    class="h-full w-full object-cover"
+                    class="repo-card__thumb h-full w-full object-cover"
+                    decoding="async"
+                    loading="lazy"
                     @error="
                     (e) =>
                       ((e.target as HTMLImageElement).style.display = 'none')
@@ -344,6 +345,28 @@ const getInitials = (name: string) => {
 </template>
 
 <style scoped>
+/* The twist came from the global `img:hover` rule, which only fires while the
+   pointer sits on the thumbnail itself. Anchor it to the card instead, so
+   hovering anywhere on a project -- title, description, topics, the meta row
+   -- moves its image. */
+.repo-card:hover .repo-card__thumb,
+.featured-repo:hover .featured-repo__thumb {
+  transform: scale(1.07) rotate(1deg);
+}
+
+/* Snapping instantly into a scale-and-rotate is not an improvement on
+   animating into one -- drop the movement entirely instead. */
+@media (prefers-reduced-motion: reduce) {
+  .repo-card:hover .repo-card__thumb,
+  .featured-repo:hover .featured-repo__thumb {
+    transform: none;
+  }
+
+  .featured-badge {
+    animation: none;
+  }
+}
+
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -363,81 +386,6 @@ const getInitials = (name: string) => {
   font-weight: 800;
   font-size: 1.4rem;
   letter-spacing: 0.08em;
-}
-
-.skeleton-card {
-  background: var(--color-background-light);
-  border: 1px solid var(--border-light);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.skeleton {
-  position: relative;
-  overflow: hidden;
-  background: rgba(var(--color-text-primary-rgb), 0.06);
-  border-radius: 0.5rem;
-}
-
-.skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-      120deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.35) 50%,
-      transparent 100%
-  );
-  transform: translateX(-100%);
-  animation: shimmer 1.2s ease-in-out infinite;
-}
-
-.skeleton-thumb {
-  height: 140px;
-  border-radius: 0.65rem;
-}
-
-.skeleton-title {
-  height: 18px;
-  width: 70%;
-}
-
-.skeleton-line {
-  height: 12px;
-  width: 100%;
-}
-
-.skeleton-line.short {
-  width: 60%;
-}
-
-.skeleton-chip-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.skeleton-chip {
-  height: 20px;
-  width: 64px;
-  border-radius: 9999px;
-}
-
-.skeleton-meta {
-  height: 12px;
-  width: 55%;
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
 }
 
 .featured-repo {
@@ -547,36 +495,45 @@ const getInitials = (name: string) => {
   transform: translateY(-2px);
 }
 
+/* Same shape and palette as the site's other buttons (the home page's
+   "View my work", the contact form's submit): theme tokens, a 0.375rem
+   radius and the shared hover surface -- not the standalone purple gradient
+   these used to carry. */
 .featured-button {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  font-weight: 500;
   font-size: 0.875rem;
-  transition: all 0.2s ease;
+  color: var(--color-text-primary);
   text-decoration: none;
-  display: inline-block;
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+  transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .featured-button-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background: var(--color-button-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .featured-button-primary:hover {
+  background: var(--color-background-light-2);
+  border-color: var(--color-button-primary);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .featured-button-secondary {
   background: transparent;
-  color: var(--color-text-primary);
-  border: 2px solid var(--border-light);
+  border-color: var(--color-border-light);
 }
 
 .featured-button-secondary:hover {
   background: var(--color-background-light-2);
-  border-color: rgba(102, 126, 234, 0.5);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 </style>

@@ -1,30 +1,30 @@
 <template>
   <div
       :class="[
-      'bg-background-light-2 dark:bg-background-dark-2 relative flex min-h-screen w-full items-start justify-center overflow-hidden',
+      'bg-background-light-2 dark:bg-background-dark-2 relative flex min-h-screen w-full items-start justify-center',
       { 'h-full w-full': isInterestsPage },
     ]"
   >
     <div
-        class="bg-background-light dark:bg-background-dark border-x-border-dark relative z-0 min-h-screen w-full border-x-0 border-solid md:border-x lg:w-2/3"
+        v-if="isBlogPage"
+        :style="{ width: scrollProgress + '%' }"
+        class="fixed top-0 left-0 z-50 h-1 bg-linear-to-r from-blue-300 to-red-200 transition-all duration-150"
+    />
+    <!-- The centre column no longer owns the scrollbar. It used to be an
+         `h-screen overflow-y-auto` box, which meant the wheel only scrolled
+         while the pointer was over the column itself -- over the side gutters
+         nothing moved. The document scrolls now, so the whole viewport
+         responds. -->
+    <div
+        class="bg-background-light dark:bg-background-dark border-x-border-dark relative z-0 flex min-h-screen w-full flex-col border-x-0 border-solid md:border-x lg:w-2/3"
     >
-      <div
-          v-if="isBlogPage"
-          :style="{ width: scrollProgress + '%' }"
-          class="fixed top-0 left-0 z-50 h-1 bg-linear-to-r from-blue-300 to-red-200 transition-all duration-150"
-      />
-      <div
-          ref="scrollContainer"
-          class="no-scrollbar sticky top-0 z-10 h-screen overflow-y-auto"
-      >
-        <Navbar/>
-        <main class="flex-1">
-          <slot/>
-        </main>
-        <Footer/>
-      </div>
+      <Navbar/>
+      <main class="flex-1">
+        <slot/>
+      </main>
+      <Footer/>
     </div>
-    <div ref="cursor" :class="['cursor', cursorType]"/>
+    <CustomCursor/>
     <SpeedInsights />
   </div>
 </template>
@@ -33,6 +33,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { SpeedInsights } from "@vercel/speed-insights/vue";
+import CustomCursor from "~/components/CustomCursor.vue";
 
 const route = useRoute();
 
@@ -41,99 +42,44 @@ const route = useRoute();
 const isInterestsPage = computed(() => route.path === "/interests");
 const isBlogPage = computed(() => route.path.startsWith("/blog/"));
 
-const cursor = ref<HTMLElement | null>(null);
-const cursorType = ref<"default" | "hover" | "text">("default");
 const scrollProgress = ref(0);
-const scrollContainer = ref<HTMLElement | null>(null);
 
 const updateScroll = () => {
-  if (!scrollContainer.value) return;
-  const scrollTop = scrollContainer.value.scrollTop;
-  const scrollHeight =
-    scrollContainer.value.scrollHeight - scrollContainer.value.clientHeight;
+  const doc = document.documentElement;
+  const scrollTop = window.scrollY;
+  const scrollHeight = doc.scrollHeight - window.innerHeight;
   // Guard the divide: a page shorter than the viewport gives 0 here, which
   // produced `width: NaN%` on the progress bar.
   scrollProgress.value =
     scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
 };
 
-const TEXT_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
-const TEXT_SELECTOR =
-  "h1, h2, h3, h4, h5, h6, p, span, article, li, pre, code, [contenteditable='true']";
-
-let mouseX = 0;
-let mouseY = 0;
-let frame = 0;
-
-const paintCursor = () => {
-  frame = 0;
-  if (cursor.value) {
-    cursor.value.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
-  }
-};
-
-const updateCursor = (e: MouseEvent) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-
-  // Coalesce moves into one paint per frame rather than writing style on
-  // every event.
-  if (!frame) frame = requestAnimationFrame(paintCursor);
-
-  const target = e.target as HTMLElement;
-  if (!target?.closest) return;
-
-  // Note: no getComputedStyle here. Calling it per mousemove forced a style
-  // recalculation on every pointer event.
-  if (target.tagName === "IMG" || target.closest("img")) {
-    cursorType.value = "default";
-  } else if (target.closest("a, button, [role='button'], .cursor-hover")) {
-    cursorType.value = "hover";
-  } else if (TEXT_TAGS.has(target.tagName) || target.closest(TEXT_SELECTOR)) {
-    cursorType.value = "text";
-  } else {
-    cursorType.value = "default";
-  }
-};
+let scrollListening = false;
 
 const addScrollListener = () => {
-  if (scrollContainer.value) {
-    // Passive: this listener never calls preventDefault, and saying so lets
-    // the browser scroll without waiting on it.
-    scrollContainer.value.addEventListener("scroll", updateScroll, {
-      passive: true,
-    });
-    updateScroll();
-  }
+  if (typeof window === "undefined" || scrollListening) return;
+  // Passive: this listener never calls preventDefault, and saying so lets
+  // the browser scroll without waiting on it.
+  window.addEventListener("scroll", updateScroll, { passive: true });
+  scrollListening = true;
+  updateScroll();
 };
 
 const removeScrollListener = () => {
-  if (scrollContainer.value) {
-    scrollContainer.value.removeEventListener("scroll", updateScroll);
-    scrollProgress.value = 0;
-  }
+  if (typeof window === "undefined" || !scrollListening) return;
+  window.removeEventListener("scroll", updateScroll);
+  scrollListening = false;
+  scrollProgress.value = 0;
 };
 
-// Scroll to top on route change
+// Scroll to top on route change. `behavior: "smooth"` is a JS argument, so
+// the reduced-motion CSS cannot override it -- ask before animating.
 const scrollToTop = () => {
-  scrollContainer.value?.scrollTo({ top: 0, behavior: "smooth" });
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
 };
-
-/** The custom cursor is hidden on touch devices, so skip the work entirely. */
-const hasFinePointer = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-
-let cursorEnabled = false;
 
 onMounted(() => {
-  cursorEnabled = hasFinePointer();
-
-  if (cursorEnabled) {
-    document.body.style.cursor = "none";
-    window.addEventListener("mousemove", updateCursor, { passive: true });
-  }
-
   if (isBlogPage.value) {
     addScrollListener();
   }
@@ -154,56 +100,6 @@ watch(
 );
 
 onUnmounted(() => {
-  if (cursorEnabled) {
-    document.body.style.cursor = "auto";
-    window.removeEventListener("mousemove", updateCursor);
-  }
-  if (frame) cancelAnimationFrame(frame);
   removeScrollListener();
 });
 </script>
-
-<style>
-* {
-  cursor: none !important;
-}
-
-/* Match the JS gate: restore the native cursor wherever there is no fine
-   pointer, rather than guessing from viewport width. */
-@media (hover: none), (pointer: coarse) {
-  * {
-    cursor: auto !important;
-  }
-
-  .cursor {
-    display: none !important;
-  }
-}
-
-.cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 10px;
-  height: 10px;
-  background-color: white;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
-  transform: translate(-50%, -50%);
-  transition: width 0.15s ease,
-  height 0.15s ease;
-}
-
-.cursor.hover {
-  width: 25px;
-  height: 25px;
-}
-
-.cursor.text {
-  width: 2px;
-  height: 24px;
-  border-radius: 0;
-}
-</style>

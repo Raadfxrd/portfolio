@@ -13,6 +13,28 @@ const containerRef = ref<HTMLElement | null>(null);
 const isHovered = ref(false);
 const hoverTimeout = ref<NodeJS.Timeout | null>(null);
 
+/**
+ * How far the satellites travel, as a fraction of the container's own width.
+ *
+ * This used to be a flat 150px, which is 0.375 of the 400px desktop container
+ * but 0.68 of the 220px mobile one -- so on phones the satellites shot well
+ * past the container and off the side of the screen. Measuring the container
+ * keeps the spread proportional at every breakpoint.
+ */
+const ORBIT_RATIO = 0.375;
+
+const orbitRadius = (container: HTMLElement) =>
+    (container.getBoundingClientRect().width || 400) * ORBIT_RATIO;
+
+/**
+ * GSAP writes inline transforms, so the global reduced-motion CSS cannot
+ * touch this one. Ask directly and hand the tweens a zero duration: the
+ * satellites still appear, they just do not fly.
+ */
+const prefersReducedMotion = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const handleMouseEnter = () => {
   if (hoverTimeout.value) {
     clearTimeout(hoverTimeout.value);
@@ -23,20 +45,23 @@ const handleMouseEnter = () => {
     const container = containerRef.value;
     if (!container) return;
 
+    const reduced = prefersReducedMotion();
+
     const mainImage = container.querySelector(".main-image");
     if (mainImage) {
       gsap.killTweensOf(mainImage);
 
       gsap.to(mainImage, {
         scale: 0.95,
-        duration: 0.5,
+        duration: reduced ? 0 : 0.5,
         ease: "power2.out",
       });
     }
 
+    const radius = orbitRadius(container);
+
     props.satelliteImages.forEach((_, index) => {
       const angle = (index * 360) / props.satelliteImages.length;
-      const radius = 150;
       const satelliteElement = container.querySelectorAll(".satellite-image")[index];
 
       if (satelliteElement) {
@@ -47,8 +72,8 @@ const handleMouseEnter = () => {
           scale: 1,
           x: Math.cos((angle * Math.PI) / 180) * radius,
           y: Math.sin((angle * Math.PI) / 180) * radius,
-          duration: 0.6,
-          delay: index * 0.1,
+          duration: reduced ? 0 : 0.6,
+          delay: reduced ? 0 : index * 0.1,
           ease: "power3.out",
         });
       }
@@ -66,13 +91,15 @@ const handleMouseLeave = () => {
   const container = containerRef.value;
   if (!container) return;
 
+  const reduced = prefersReducedMotion();
+
   const mainImage = container.querySelector(".main-image");
   if (mainImage) {
     gsap.killTweensOf(mainImage);
 
     gsap.to(mainImage, {
       scale: 1,
-      duration: 0.4,
+      duration: reduced ? 0 : 0.4,
       ease: "power2.inOut",
     });
   }
@@ -85,7 +112,7 @@ const handleMouseLeave = () => {
       scale: 0.5,
       x: 0,
       y: 0,
-      duration: 0.3,
+      duration: reduced ? 0 : 0.3,
       ease: "power3.in",
     });
   });
@@ -119,6 +146,7 @@ onUnmounted(() => {
           :alt="alt ?? 'Main image'"
           :src="mainImage"
           class="main-image border-border-dark col-start-1 row-start-1 h-[140px] w-[140px] sm:h-[180px] sm:w-[180px] md:h-[280px] md:w-[280px] rounded-full border-2 object-cover shadow-lg transition-shadow duration-300 hover:cursor-pointer hover:shadow-xl"
+          data-hero-portrait
           style="object-position: center top"
           @mouseenter="handleMouseEnter"
           @mouseleave="handleMouseLeave"
@@ -130,6 +158,8 @@ onUnmounted(() => {
             :alt="`Satellite image ${index + 1}`"
             :src="image"
             class="satellite-image border-border-dark col-start-1 row-start-1 h-[70px] w-[70px] sm:h-[100px] sm:w-[100px] md:h-[150px] md:w-[150px] scale-50 rounded-full border-1 object-cover opacity-0 shadow-md"
+            decoding="async"
+            fetchpriority="low"
         />
       </template>
     </div>
