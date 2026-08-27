@@ -157,6 +157,8 @@ onUnmounted(() => {
             :alt="`Satellite image ${index + 1}`"
             :src="image"
             class="satellite-image border-border-dark col-start-1 row-start-1 h-[70px] w-[70px] sm:h-[100px] sm:w-[100px] md:h-[150px] md:w-[150px] scale-50 rounded-full border-1 object-cover opacity-0 shadow-md"
+            decoding="async"
+            fetchpriority="low"
         />
       </template>
     </div>

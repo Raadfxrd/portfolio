@@ -260,6 +260,8 @@ const getInitials = (name: string) => {
                     :alt="`${repo.name} thumbnail`"
                     :src="repo.thumbnail"
                     class="repo-card__thumb h-full w-full object-cover"
+                    decoding="async"
+                    loading="lazy"
                     @error="
                     (e) =>
                       ((e.target as HTMLImageElement).style.display = 'none')

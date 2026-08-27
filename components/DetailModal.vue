@@ -31,7 +31,7 @@
             <slot name="icon">
               <div v-if="icon"
                    class="mb-6 inline-flex items-center justify-center rounded-xl bg-white p-4 border border-border-light">
-                <img :alt="title" :src="icon" class="w-16 h-16 object-contain"/>
+                <img :alt="title" :src="icon" class="w-16 h-16 object-contain" decoding="async" loading="lazy"/>
               </div>
             </slot>
 
