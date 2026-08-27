@@ -28,6 +28,7 @@
         >
           <!-- Portrait -->
           <ExplodingImage
+            ref="portraitRef"
             :main-image="'/img/raadfxrd.jpeg'"
             :satellite-images="[
               '/img/satelite/borys.jpeg',
@@ -67,11 +68,7 @@
             </h1>
 
             <h3
-              :class="{
-                'animate-fadeOut': isFadingOut,
-                'animate-fadeIn': !isFadingOut,
-              }"
-              class="text-text-secondary mx-auto mb-2 w-fit text-sm transition-transform duration-500 md:mx-0 md:text-sm"
+              class="text-text-secondary mx-auto mb-2 text-sm md:mx-0 md:text-sm"
             >
               {{ currentTitle }}
             </h3>
@@ -147,6 +144,8 @@
 </template>
 
 <script lang="ts" setup>
+import { onMounted, onUnmounted, ref } from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
 import { ArrowRightIcon } from "@heroicons/vue/24/outline";
 import TechStack from "~/components/TechStack.vue";
 import PostCard from "~/components/PostCard.vue";
@@ -157,10 +156,50 @@ import FadeInSection from "~/components/FadeInSection.vue";
 import { useIntroSequence } from "~/composables/useIntroSequence";
 import { useRotatingTitles } from "~/composables/useRotatingTitles";
 import { useGreeting } from "~/composables/useGreeting";
+import { useHeroPortrait } from "~/composables/useHeroPortrait";
 
 const { greeting } = useGreeting();
-const { currentTitle, isFadingOut } = useRotatingTitles();
+const { currentTitle } = useRotatingTitles();
 const { showIntro, showContent } = useIntroSequence();
+
+/**
+ * Hand the navbar logo over to the hero portrait while the portrait is on
+ * screen. Set here in setup rather than onMounted so the logo is already out
+ * of the way by the time the navbar appears, instead of popping out of view.
+ */
+const { logoReveal } = useHeroPortrait();
+// Untyped: this holds a component instance, which vueuse resolves to the
+// component's root element.
+const portraitRef = ref();
+
+logoReveal.value = 0;
+
+// Enough thresholds to read as a scrub rather than a series of steps; the CSS
+// transition on the logo smooths what is left.
+const REVEAL_THRESHOLDS = Array.from({ length: 21 }, (_, i) => i / 20);
+
+// Registered in setup rather than inside onMounted so it binds to the
+// component's effect scope and tears itself down with the page.
+const { stop: stopWatchingPortrait } = useIntersectionObserver(
+  portraitRef,
+  ([entry]) => {
+    logoReveal.value = 1 - entry.intersectionRatio;
+  },
+  { threshold: REVEAL_THRESHOLDS },
+);
+
+onMounted(() => {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    // Leave the logo in place rather than animating it in and out.
+    stopWatchingPortrait();
+    logoReveal.value = 1;
+  }
+});
+
+// Every other page shows the logo outright.
+onUnmounted(() => {
+  logoReveal.value = 1;
+});
 
 const { data: posts } = await useBlogPosts();
 

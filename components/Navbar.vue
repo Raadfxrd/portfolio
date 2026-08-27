@@ -10,13 +10,20 @@
         <div
             class="flex w-full items-center justify-between gap-2 md:justify-around md:gap-0"
         >
-          <!-- Small Logo -->
-          <img
-              alt="Small Logo"
-              class="border-border-dark h-8 w-8 shrink-0 rounded-full border object-cover transition-transform hover:scale-105 hover:cursor-pointer md:h-10 md:w-10"
-              src="/img/raadfxrd.jpeg"
-              @click="$router.push('/')"
-          />
+          <!-- Small Logo. Kept in the flow at all times: hiding it outright
+               would slide the link pill sideways every time the hero portrait
+               scrolls past. -->
+          <span
+              :style="logoStyle"
+              class="logo-slot inline-flex shrink-0"
+          >
+            <img
+                alt="Small Logo"
+                class="border-border-dark h-8 w-8 rounded-full border object-cover transition-transform hover:scale-105 hover:cursor-pointer md:h-10 md:w-10"
+                src="/img/raadfxrd.jpeg"
+                @click="$router.push('/')"
+            />
+          </span>
 
           <!-- Nav Links: the inline pill is a desktop affordance; below `sm`
                it is replaced by the menu button on the right. -->
@@ -103,11 +110,28 @@ import {
 import {computed, nextTick, ref, watch} from "vue";
 import {useRoute} from "vue-router";
 import {onClickOutside, useEventListener} from "@vueuse/core";
+import {useHeroPortrait} from "~/composables/useHeroPortrait";
 
 const {isNavbarVisible, isAnimationComplete} = useNavbarVisibility();
 const {links} = useNavigation();
+const {logoReveal} = useHeroPortrait();
 const colorMode = useColorMode();
 const route = useRoute();
+
+/**
+ * The navbar avatar and the hero portrait are the same photograph, so rather
+ * than fading the small one in, it grows into place as the large one leaves --
+ * scrubbed from the portrait's own visibility, not switched at a threshold.
+ *
+ * No overshoot on the settle: this is scrubbed by scroll position, and a curve
+ * that overshoots forwards would read as a stumble when scrolled backwards.
+ * The short transition below does the smoothing instead.
+ */
+const logoStyle = computed(() => ({
+  opacity: logoReveal.value,
+  transform: `scale(${0.4 + 0.6 * logoReveal.value})`,
+  pointerEvents: logoReveal.value < 0.5 ? "none" : "auto",
+}));
 
 const navRef = ref(null);
 const panelRef = ref(null);
@@ -168,6 +192,13 @@ const icon = computed(() => {
 </script>
 
 <style scoped>
+.logo-slot {
+  transform-origin: center;
+  transition: opacity 0.25s var(--motion-ease),
+  transform 0.25s var(--motion-ease);
+  will-change: opacity, transform;
+}
+
 .menu-enter-active,
 .menu-leave-active {
   transition: opacity 0.2s var(--motion-ease),
