@@ -353,11 +353,15 @@ const onScrollFrame = () => {
 
   const ratio = scrollY.value / flightDistance.value;
 
+  // Re-read at take-off and at landing both, so each leg starts from where the
+  // portrait actually is rather than from where it was when the page settled.
   if (!engaged && ratio > ENGAGE_AT) {
     engaged = true;
+    readFlightGeometry();
     animateFlight(1);
   } else if (engaged && ratio < RELEASE_AT) {
     engaged = false;
+    readFlightGeometry();
     animateFlight(0);
   }
 };
