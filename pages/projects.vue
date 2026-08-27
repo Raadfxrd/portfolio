@@ -10,20 +10,36 @@ import { StarIcon as StarIconSolid } from "@heroicons/vue/24/solid";
 import type { PublicRepo } from "~/server/api/github/repos.get";
 
 const loadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const loading = ref(true);
+const minimumDelayPassed = ref(false);
 const skeletonCount = 6;
-const minimumLoadingMs = 1000;
+const minimumLoadingMs = 300;
 
 /**
  * The repo list is assembled and cached server-side. The browser used to call
  * the GitHub API directly, which required shipping a token to the client and
  * burned ~60 requests per page view against a 60-per-hour limit.
+ *
+ * Lazy, and deliberately not awaited: an awaited client-only useFetch suspends
+ * this component's setup, so clicking "Projects" in the navbar sat on the old
+ * page until GitHub answered. Lazy swaps the page in immediately and the
+ * skeleton covers the wait.
  */
-const { data, error: fetchError } = await useFetch("/api/github/repos", {
+const {
+  data,
+  status,
+  error: fetchError,
+} = useLazyFetch("/api/github/repos", {
   key: "github-repos",
   server: false,
   default: (): PublicRepo[] => [],
 });
+
+const loading = computed(
+  () =>
+    !minimumDelayPassed.value ||
+    status.value === "idle" ||
+    status.value === "pending",
+);
 
 const error = computed(() =>
   fetchError.value ? "Failed to load projects. Please try again later." : null,
@@ -41,7 +57,7 @@ const repos = computed<PublicRepo[]>(() =>
 onMounted(() => {
   // Hold the skeleton briefly so a fast cache hit does not flash.
   loadingTimeout.value = setTimeout(() => {
-    loading.value = false;
+    minimumDelayPassed.value = true;
   }, minimumLoadingMs);
 });
 
