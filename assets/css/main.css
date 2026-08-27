@@ -97,14 +97,14 @@ body {
 	--tw-prose-headings: var(--color-text-secondary);
 }
 
-/* Portrait Image Styling */
+/* Images animate their transform smoothly wherever one is applied. The hover
+   twist itself is deliberately NOT global: as `img:hover` it also caught the
+   navbar avatar, the employer and school logos and the modal icons, so every
+   logo on the site wobbled. Components opt in instead -- see the project
+   cards in pages/projects.vue. */
 img {
 	transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 	transform: scale(1) rotate(0deg);
-}
-
-img:hover {
-	transform: scale(1.07) rotate(1deg);
 }
 
 .page-enter-active,
