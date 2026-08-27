@@ -61,12 +61,15 @@
           class="bg-background-light-2 text-text-secondary max-w-full overflow-x-auto rounded-md px-4 py-3 text-left text-xs"
       >{{ error.message }}</pre>
     </div>
+
+    <CustomCursor/>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
 import type { NuxtError } from "#app";
+import CustomCursor from "~/components/CustomCursor.vue";
 
 const props = defineProps<{ error?: NuxtError }>();
 

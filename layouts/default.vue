@@ -24,7 +24,7 @@
       </main>
       <Footer/>
     </div>
-    <div ref="cursor" :class="['cursor', cursorType]"/>
+    <CustomCursor/>
     <SpeedInsights />
   </div>
 </template>
@@ -33,6 +33,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { SpeedInsights } from "@vercel/speed-insights/vue";
+import CustomCursor from "~/components/CustomCursor.vue";
 
 const route = useRoute();
 
@@ -41,8 +42,6 @@ const route = useRoute();
 const isInterestsPage = computed(() => route.path === "/interests");
 const isBlogPage = computed(() => route.path.startsWith("/blog/"));
 
-const cursor = ref<HTMLElement | null>(null);
-const cursorType = ref<"default" | "hover" | "text">("default");
 const scrollProgress = ref(0);
 
 const updateScroll = () => {
@@ -53,45 +52,6 @@ const updateScroll = () => {
   // produced `width: NaN%` on the progress bar.
   scrollProgress.value =
     scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
-};
-
-const TEXT_TAGS = new Set(["INPUT", "TEXTAREA", "SELECT"]);
-const TEXT_SELECTOR =
-  "h1, h2, h3, h4, h5, h6, p, span, article, li, pre, code, [contenteditable='true']";
-
-let mouseX = 0;
-let mouseY = 0;
-let frame = 0;
-
-const paintCursor = () => {
-  frame = 0;
-  if (cursor.value) {
-    cursor.value.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
-  }
-};
-
-const updateCursor = (e: MouseEvent) => {
-  mouseX = e.clientX;
-  mouseY = e.clientY;
-
-  // Coalesce moves into one paint per frame rather than writing style on
-  // every event.
-  if (!frame) frame = requestAnimationFrame(paintCursor);
-
-  const target = e.target as HTMLElement;
-  if (!target?.closest) return;
-
-  // Note: no getComputedStyle here. Calling it per mousemove forced a style
-  // recalculation on every pointer event.
-  if (target.tagName === "IMG" || target.closest("img")) {
-    cursorType.value = "default";
-  } else if (target.closest("a, button, [role='button'], .cursor-hover")) {
-    cursorType.value = "hover";
-  } else if (TEXT_TAGS.has(target.tagName) || target.closest(TEXT_SELECTOR)) {
-    cursorType.value = "text";
-  } else {
-    cursorType.value = "default";
-  }
 };
 
 let scrollListening = false;
@@ -117,21 +77,7 @@ const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
-/** The custom cursor is hidden on touch devices, so skip the work entirely. */
-const hasFinePointer = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-
-let cursorEnabled = false;
-
 onMounted(() => {
-  cursorEnabled = hasFinePointer();
-
-  if (cursorEnabled) {
-    document.body.style.cursor = "none";
-    window.addEventListener("mousemove", updateCursor, { passive: true });
-  }
-
   if (isBlogPage.value) {
     addScrollListener();
   }
@@ -152,56 +98,6 @@ watch(
 );
 
 onUnmounted(() => {
-  if (cursorEnabled) {
-    document.body.style.cursor = "auto";
-    window.removeEventListener("mousemove", updateCursor);
-  }
-  if (frame) cancelAnimationFrame(frame);
   removeScrollListener();
 });
 </script>
-
-<style>
-* {
-  cursor: none !important;
-}
-
-/* Match the JS gate: restore the native cursor wherever there is no fine
-   pointer, rather than guessing from viewport width. */
-@media (hover: none), (pointer: coarse) {
-  * {
-    cursor: auto !important;
-  }
-
-  .cursor {
-    display: none !important;
-  }
-}
-
-.cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 10px;
-  height: 10px;
-  background-color: white;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  mix-blend-mode: difference;
-  transform: translate(-50%, -50%);
-  transition: width 0.15s ease,
-  height 0.15s ease;
-}
-
-.cursor.hover {
-  width: 25px;
-  height: 25px;
-}
-
-.cursor.text {
-  width: 2px;
-  height: 24px;
-  border-radius: 0;
-}
-</style>
