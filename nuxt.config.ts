@@ -33,6 +33,12 @@ export default defineNuxtConfig({
 
     css: ["/assets/css/main.css"],
 
+    routeRules: {
+        // /services is gone -- this stays a portfolio. Redirect rather than
+        // 404 so existing links and indexed results land somewhere useful.
+        "/services": {redirect: {to: "/", statusCode: 301}},
+    },
+
     vite: {
         plugins: [tailwindcss()],
     },

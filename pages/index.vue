@@ -21,7 +21,7 @@
           v-if="showContent"
           :distance="36"
           :duration="1100"
-          class="flex h-screen w-full flex-col items-center justify-center px-4"
+          class="flex min-h-[100svh] w-full flex-col items-center justify-center px-4 pt-24 pb-16 md:pt-28 md:pb-20"
       >
         <div
             class="flex w-full max-w-5xl flex-col items-center justify-center gap-8 px-4 md:flex-row md:gap-12 md:px-6"
@@ -39,7 +39,7 @@
               alt="Portrait of Borys"
           />
           <!-- Text Section -->
-          <div class="max-w-lg text-center md:text-left">
+          <div class="w-full max-w-lg text-center break-words md:text-left">
             <h1
                 class="gradient mb-2 flex flex-wrap justify-center gap-2 text-xl font-bold sm:text-2xl md:justify-start md:text-3xl"
             >

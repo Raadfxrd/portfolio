@@ -11,7 +11,6 @@ const { data: posts } = await useBlogPosts();
 const pageDescriptions: Record<string, string> = {
   "/": "Welcome to my portfolio",
   "/projects": "Explore my GitHub projects and repositories",
-  "/services": "PC building and custom keyboard assembly services",
   "/interests": "My hobbies and personal interests",
   "/contact": "Get in touch with me",
   "/privacy": "How I handle your data",
@@ -22,7 +21,6 @@ const pageDescriptions: Record<string, string> = {
 const pageTitles: Record<string, string> = {
   "/": "Home",
   "/projects": "Projects",
-  "/services": "Services",
   "/interests": "Interests",
   "/contact": "Contact",
   "/privacy": "Privacy Policy",
@@ -33,7 +31,6 @@ const pageTitles: Record<string, string> = {
 const pageCategories: Record<string, "main" | "legal"> = {
   "/": "main",
   "/projects": "main",
-  "/services": "main",
   "/interests": "main",
   "/contact": "main",
   "/blog": "main",

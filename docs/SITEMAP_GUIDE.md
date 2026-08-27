@@ -94,7 +94,7 @@ That's it — no build step, no separate config file.
 
 ### Choosing a category
 
-- **`"main"`** — content pages a visitor would browse: `/`, `/projects`, `/services`, `/interests`,
+- **`"main"`** — content pages a visitor would browse: `/`, `/projects`, `/interests`,
   `/contact`, `/blog`.
 - **`"legal"`** — policy pages, rendered in their own section: `/privacy`, `/terms`.
 

@@ -1,28 +1,28 @@
 <template>
   <div
       :class="[
-      'bg-background-light-2 dark:bg-background-dark-2 relative flex min-h-screen w-full items-start justify-center overflow-hidden',
+      'bg-background-light-2 dark:bg-background-dark-2 relative flex min-h-screen w-full items-start justify-center',
       { 'h-full w-full': isInterestsPage },
     ]"
   >
     <div
-        class="bg-background-light dark:bg-background-dark border-x-border-dark relative z-0 min-h-screen w-full border-x-0 border-solid md:border-x lg:w-2/3"
+        v-if="isBlogPage"
+        :style="{ width: scrollProgress + '%' }"
+        class="fixed top-0 left-0 z-50 h-1 bg-linear-to-r from-blue-300 to-red-200 transition-all duration-150"
+    />
+    <!-- The centre column no longer owns the scrollbar. It used to be an
+         `h-screen overflow-y-auto` box, which meant the wheel only scrolled
+         while the pointer was over the column itself -- over the side gutters
+         nothing moved. The document scrolls now, so the whole viewport
+         responds. -->
+    <div
+        class="bg-background-light dark:bg-background-dark border-x-border-dark relative z-0 flex min-h-screen w-full flex-col border-x-0 border-solid md:border-x lg:w-2/3"
     >
-      <div
-          v-if="isBlogPage"
-          :style="{ width: scrollProgress + '%' }"
-          class="fixed top-0 left-0 z-50 h-1 bg-linear-to-r from-blue-300 to-red-200 transition-all duration-150"
-      />
-      <div
-          ref="scrollContainer"
-          class="no-scrollbar sticky top-0 z-10 h-screen overflow-y-auto"
-      >
-        <Navbar/>
-        <main class="flex-1">
-          <slot/>
-        </main>
-        <Footer/>
-      </div>
+      <Navbar/>
+      <main class="flex-1">
+        <slot/>
+      </main>
+      <Footer/>
     </div>
     <div ref="cursor" :class="['cursor', cursorType]"/>
     <SpeedInsights />
@@ -44,13 +44,11 @@ const isBlogPage = computed(() => route.path.startsWith("/blog/"));
 const cursor = ref<HTMLElement | null>(null);
 const cursorType = ref<"default" | "hover" | "text">("default");
 const scrollProgress = ref(0);
-const scrollContainer = ref<HTMLElement | null>(null);
 
 const updateScroll = () => {
-  if (!scrollContainer.value) return;
-  const scrollTop = scrollContainer.value.scrollTop;
-  const scrollHeight =
-    scrollContainer.value.scrollHeight - scrollContainer.value.clientHeight;
+  const doc = document.documentElement;
+  const scrollTop = window.scrollY;
+  const scrollHeight = doc.scrollHeight - window.innerHeight;
   // Guard the divide: a page shorter than the viewport gives 0 here, which
   // produced `width: NaN%` on the progress bar.
   scrollProgress.value =
@@ -96,27 +94,27 @@ const updateCursor = (e: MouseEvent) => {
   }
 };
 
+let scrollListening = false;
+
 const addScrollListener = () => {
-  if (scrollContainer.value) {
-    // Passive: this listener never calls preventDefault, and saying so lets
-    // the browser scroll without waiting on it.
-    scrollContainer.value.addEventListener("scroll", updateScroll, {
-      passive: true,
-    });
-    updateScroll();
-  }
+  if (typeof window === "undefined" || scrollListening) return;
+  // Passive: this listener never calls preventDefault, and saying so lets
+  // the browser scroll without waiting on it.
+  window.addEventListener("scroll", updateScroll, { passive: true });
+  scrollListening = true;
+  updateScroll();
 };
 
 const removeScrollListener = () => {
-  if (scrollContainer.value) {
-    scrollContainer.value.removeEventListener("scroll", updateScroll);
-    scrollProgress.value = 0;
-  }
+  if (typeof window === "undefined" || !scrollListening) return;
+  window.removeEventListener("scroll", updateScroll);
+  scrollListening = false;
+  scrollProgress.value = 0;
 };
 
 // Scroll to top on route change
 const scrollToTop = () => {
-  scrollContainer.value?.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 /** The custom cursor is hidden on touch devices, so skip the work entirely. */

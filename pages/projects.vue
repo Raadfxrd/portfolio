@@ -10,20 +10,36 @@ import { StarIcon as StarIconSolid } from "@heroicons/vue/24/solid";
 import type { PublicRepo } from "~/server/api/github/repos.get";
 
 const loadingTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
-const loading = ref(true);
+const minimumDelayPassed = ref(false);
 const skeletonCount = 6;
-const minimumLoadingMs = 1000;
+const minimumLoadingMs = 300;
 
 /**
  * The repo list is assembled and cached server-side. The browser used to call
  * the GitHub API directly, which required shipping a token to the client and
  * burned ~60 requests per page view against a 60-per-hour limit.
+ *
+ * Lazy, and deliberately not awaited: an awaited client-only useFetch suspends
+ * this component's setup, so clicking "Projects" in the navbar sat on the old
+ * page until GitHub answered. Lazy swaps the page in immediately and the
+ * skeleton covers the wait.
  */
-const { data, error: fetchError } = await useFetch("/api/github/repos", {
+const {
+  data,
+  status,
+  error: fetchError,
+} = useLazyFetch("/api/github/repos", {
   key: "github-repos",
   server: false,
   default: (): PublicRepo[] => [],
 });
+
+const loading = computed(
+  () =>
+    !minimumDelayPassed.value ||
+    status.value === "idle" ||
+    status.value === "pending",
+);
 
 const error = computed(() =>
   fetchError.value ? "Failed to load projects. Please try again later." : null,
@@ -41,7 +57,7 @@ const repos = computed<PublicRepo[]>(() =>
 onMounted(() => {
   // Hold the skeleton briefly so a fast cache hit does not flash.
   loadingTimeout.value = setTimeout(() => {
-    loading.value = false;
+    minimumDelayPassed.value = true;
   }, minimumLoadingMs);
 });
 
@@ -219,9 +235,7 @@ const getInitials = (name: string) => {
                       target="_blank"
                   >
                     <span>View on GitHub</span>
-                    <ArrowTopRightOnSquareIcon
-                        class="ml-1 inline-block h-4 w-4"
-                    />
+                    <ArrowTopRightOnSquareIcon class="h-4 w-4"/>
                   </a>
                   <a
                       v-if="featuredRepo.homepage"
@@ -231,9 +245,7 @@ const getInitials = (name: string) => {
                       target="_blank"
                   >
                     <span>Live Demo</span>
-                    <ArrowTopRightOnSquareIcon
-                        class="ml-1 inline-block h-4 w-4"
-                    />
+                    <ArrowTopRightOnSquareIcon class="h-4 w-4"/>
                   </a>
                 </div>
               </div>
@@ -547,36 +559,45 @@ const getInitials = (name: string) => {
   transform: translateY(-2px);
 }
 
+/* Same shape and palette as the site's other buttons (the home page's
+   "View my work", the contact form's submit): theme tokens, a 0.375rem
+   radius and the shared hover surface -- not the standalone purple gradient
+   these used to carry. */
 .featured-button {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  font-weight: 500;
   font-size: 0.875rem;
-  transition: all 0.2s ease;
+  color: var(--color-text-primary);
   text-decoration: none;
-  display: inline-block;
+  transition: background-color 0.3s ease, border-color 0.3s ease,
+  transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .featured-button-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background: var(--color-button-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .featured-button-primary:hover {
+  background: var(--color-background-light-2);
+  border-color: var(--color-button-primary);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .featured-button-secondary {
   background: transparent;
-  color: var(--color-text-primary);
-  border: 2px solid var(--border-light);
+  border-color: var(--color-border-light);
 }
 
 .featured-button-secondary:hover {
   background: var(--color-background-light-2);
-  border-color: rgba(102, 126, 234, 0.5);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 </style>

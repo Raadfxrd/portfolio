@@ -13,6 +13,19 @@ const containerRef = ref<HTMLElement | null>(null);
 const isHovered = ref(false);
 const hoverTimeout = ref<NodeJS.Timeout | null>(null);
 
+/**
+ * How far the satellites travel, as a fraction of the container's own width.
+ *
+ * This used to be a flat 150px, which is 0.375 of the 400px desktop container
+ * but 0.68 of the 220px mobile one -- so on phones the satellites shot well
+ * past the container and off the side of the screen. Measuring the container
+ * keeps the spread proportional at every breakpoint.
+ */
+const ORBIT_RATIO = 0.375;
+
+const orbitRadius = (container: HTMLElement) =>
+    (container.getBoundingClientRect().width || 400) * ORBIT_RATIO;
+
 const handleMouseEnter = () => {
   if (hoverTimeout.value) {
     clearTimeout(hoverTimeout.value);
@@ -34,9 +47,10 @@ const handleMouseEnter = () => {
       });
     }
 
+    const radius = orbitRadius(container);
+
     props.satelliteImages.forEach((_, index) => {
       const angle = (index * 360) / props.satelliteImages.length;
-      const radius = 150;
       const satelliteElement = container.querySelectorAll(".satellite-image")[index];
 
       if (satelliteElement) {
