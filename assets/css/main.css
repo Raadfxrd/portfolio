@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Bind Tailwind's `dark:` variant to the class @nuxtjs/color-mode puts on
+   <html>, instead of Tailwind v4's default `prefers-color-scheme` media query.
+
+   Without this the two halves of the theme disagree: the tokens below switch
+   on the .dark class (the toggle), while every `dark:` utility switched on the
+   OS setting. On an OS set to dark, choosing light mode repainted everything
+   token-driven and left the `dark:` surfaces -- the page background and the
+   centre column -- dark. The mismatch was dormant until the dark tokens were
+   defined, because Tailwind v4 emits no rule at all for a utility whose theme
+   value does not exist. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
 	--color-background-light: #eeeeee;
 	--color-background-light-2: #dadada;
@@ -40,6 +52,9 @@
 	--color-button-primary: #262626;
 	--color-button-secondary: #7e7e7e;
 	--color-button-disabled: #cccccc;
+	/* Was only defined on :root, so the skeletons tinted themselves black
+	   against a dark surface and all but disappeared. */
+	--color-text-primary-rgb: 255, 255, 255;
 }
 
 @font-face {
@@ -97,14 +112,14 @@ body {
 	--tw-prose-headings: var(--color-text-secondary);
 }
 
-/* Portrait Image Styling */
+/* Images animate their transform smoothly wherever one is applied. The hover
+   twist itself is deliberately NOT global: as `img:hover` it also caught the
+   navbar avatar, the employer and school logos and the modal icons, so every
+   logo on the site wobbled. Components opt in instead -- see the project
+   cards in pages/projects.vue. */
 img {
 	transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 	transform: scale(1) rotate(0deg);
-}
-
-img:hover {
-	transform: scale(1.07) rotate(1deg);
 }
 
 .page-enter-active,
@@ -350,4 +365,64 @@ img:hover {
 	padding: 0.125rem 0.375rem;
 	border-radius: 0.25rem;
 	font-size: 0.875rem;
+}
+
+/* Loading skeletons. The base and the shimmer live here so every surface that
+   waits on data can look the same; each component supplies its own shapes. */
+.skeleton {
+	position: relative;
+	overflow: hidden;
+	background: rgba(var(--color-text-primary-rgb), 0.06);
+	border-radius: 0.5rem;
+}
+
+.skeleton::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(
+			120deg,
+			transparent 0%,
+			rgba(255, 255, 255, 0.35) 50%,
+			transparent 100%
+	);
+	transform: translateX(-100%);
+	animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+/* Honour the OS-level motion preference.
+   The site leans hard on animation -- an intro overlay, per-letter reveals,
+   an infinite marquee, a pulsing badge -- which is exactly the class of
+   movement this setting exists to quiet. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+
+	/* The marquee has no meaningful end frame to snap to, so stop it where it
+	   stands rather than jumping it to -50%. */
+	.animate-scroll {
+		animation: none !important;
+	}
+
+	/* These start at opacity 0 and are revealed by the animation, so they have
+	   to be visible without one. */
+	.animate-textReveal,
+	.animate-letterReveal {
+		opacity: 1 !important;
+	}
 }

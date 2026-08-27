@@ -19,24 +19,22 @@
           </p>
         </div>
 
-        <!-- Loading State -->
-        <div
-            v-if="pending"
-            class="flex items-center justify-center py-12 md:py-20"
-        >
-          <div class="text-text-secondary text-base md:text-lg">
-            Loading posts...
-          </div>
-        </div>
-
         <!-- Error State -->
         <div
-            v-else-if="error"
+            v-if="error"
             class="flex items-center justify-center py-12 md:py-20"
         >
           <div class="text-base text-red-500 md:text-lg">
             Failed to load blog posts. Please try again later.
           </div>
+        </div>
+
+        <!-- Loading State -->
+        <div
+            v-else-if="loading"
+            class="grid gap-6 sm:grid-cols-2 md:gap-8 lg:grid-cols-3"
+        >
+          <SkeletonCard v-for="n in 6" :key="`skeleton-${n}`"/>
         </div>
 
         <!-- Blog Posts Grid -->
@@ -147,6 +145,9 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
+import SkeletonCard from "~/components/SkeletonCard.vue";
+
 useSeoMeta({
   title: "Blog - Borys",
   description:
@@ -154,7 +155,18 @@ useSeoMeta({
 });
 
 // Fetch all blog posts from API
-const { data: posts, pending, error } = await useBlogPosts();
+const { data: posts, status, error } = await useBlogPosts();
+
+/**
+ * `status` rather than the deprecated `pending`, and the error branch is now
+ * checked first so a settled failure is never masked by a loading flag.
+ *
+ * Caveat worth knowing: when the posts API itself fails during SSR, the shared
+ * `blog-posts` request still reports `pending` at render time and `error` is
+ * not set, so this page shows skeletons rather than the error copy. Reproduced
+ * only against a missing database -- worth a second look with a live one.
+ */
+const loading = computed(() => status.value === "pending");
 
 // Format date helper
 const formatDate = (date: string) => {

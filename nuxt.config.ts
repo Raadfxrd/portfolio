@@ -25,7 +25,11 @@ export default defineNuxtConfig({
                     rel: "stylesheet",
                     type: "text/css",
                     // Pinned: `@latest` re-resolves on every request and can change without notice.
-                    href: "https://cdn.jsdelivr.net/gh/devicons/devicon@v2.16.0/devicon.min.css",
+                    // v2.17.0 rather than v2.16.0: the Chart.js icon in the tech
+                    // stack does not exist in 2.16 under any name, so that one
+                    // slot rendered empty. Every other icon in use resolves in
+                    // both versions.
+                    href: "https://cdn.jsdelivr.net/gh/devicons/devicon@v2.17.0/devicon.min.css",
                 },
             ],
         },

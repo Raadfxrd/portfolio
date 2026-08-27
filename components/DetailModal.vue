@@ -7,7 +7,11 @@
           @click.self="$emit('close')"
       >
         <div
+            ref="dialogRef"
+            :aria-labelledby="titleId"
+            aria-modal="true"
             class="modal-card relative max-w-2xl w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-border-light bg-background-light-2 p-8 shadow-2xl"
+            role="dialog"
             @click.stop
         >
           <!-- Close Button -->
@@ -27,12 +31,12 @@
             <slot name="icon">
               <div v-if="icon"
                    class="mb-6 inline-flex items-center justify-center rounded-xl bg-white p-4 border border-border-light">
-                <img :alt="title" :src="icon" class="w-16 h-16 object-contain"/>
+                <img :alt="title" :src="icon" class="w-16 h-16 object-contain" decoding="async" loading="lazy"/>
               </div>
             </slot>
 
             <!-- Title -->
-            <h3 class="gradient mb-6 text-3xl md:text-4xl font-bold w-fit">
+            <h3 :id="titleId" class="gradient mb-6 text-3xl md:text-4xl font-bold w-fit">
               {{ title }}
             </h3>
 
@@ -78,8 +82,10 @@
 <script lang="ts" setup>
 import {CalendarIcon} from "@heroicons/vue/24/outline";
 import type {Component} from "vue";
+import {nextTick, onUnmounted, ref, useId, watch} from "vue";
+import {useEventListener} from "@vueuse/core";
 
-defineProps<{
+const props = defineProps<{
   isOpen: boolean;
   icon: string;
   title: string;
@@ -91,9 +97,87 @@ defineProps<{
   detailsTitle: string;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   close: [];
 }>();
+
+const titleId = useId();
+const dialogRef = ref<HTMLElement | null>(null);
+let lastFocused: HTMLElement | null = null;
+
+const FOCUSABLE =
+    'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+
+const focusable = () =>
+    Array.from(dialogRef.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+
+/**
+ * Hold the page still behind the dialog.
+ *
+ * The document is the scroller, so without this a wheel over the backdrop
+ * scrolls the page underneath the modal. Removing the scrollbar would shift
+ * the content sideways, hence the matching padding.
+ */
+const lockScroll = () => {
+  const root = document.documentElement;
+  const scrollbar = window.innerWidth - root.clientWidth;
+  root.style.overflow = "hidden";
+  if (scrollbar > 0) root.style.paddingRight = `${scrollbar}px`;
+};
+
+const unlockScroll = () => {
+  const root = document.documentElement;
+  root.style.overflow = "";
+  root.style.paddingRight = "";
+};
+
+watch(
+    () => props.isOpen,
+    async (open) => {
+      if (open) {
+        lastFocused = document.activeElement as HTMLElement | null;
+        lockScroll();
+        await nextTick();
+        (focusable()[0] ?? dialogRef.value)?.focus();
+        return;
+      }
+
+      unlockScroll();
+      // Back where it came from, rather than at the top of the document.
+      lastFocused?.focus?.();
+      lastFocused = null;
+    },
+);
+
+// A dialog that can only be dismissed with a pointer traps anyone who opened
+// it from the keyboard, so Escape closes and Tab cycles inside it.
+useEventListener("keydown", (event: KeyboardEvent) => {
+  if (!props.isOpen) return;
+
+  if (event.key === "Escape") {
+    emit("close");
+    return;
+  }
+
+  if (event.key !== "Tab") return;
+
+  const items = focusable();
+  if (!items.length) return;
+
+  const first = items[0];
+  const last = items[items.length - 1];
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+
+// Unmounting while open would otherwise leave the page permanently locked.
+onUnmounted(unlockScroll);
 </script>
 
 <style>

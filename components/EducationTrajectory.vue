@@ -19,6 +19,8 @@
               :alt="education.school"
               :src="education.icon"
               class="border-border-light h-full w-fit rounded-full border bg-white object-contain p-1"
+              decoding="async"
+              loading="lazy"
           />
         </div>
         <div class="grow">
