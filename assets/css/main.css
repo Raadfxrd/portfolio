@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Bind Tailwind's `dark:` variant to the class @nuxtjs/color-mode puts on
+   <html>, instead of Tailwind v4's default `prefers-color-scheme` media query.
+
+   Without this the two halves of the theme disagree: the tokens below switch
+   on the .dark class (the toggle), while every `dark:` utility switched on the
+   OS setting. On an OS set to dark, choosing light mode repainted everything
+   token-driven and left the `dark:` surfaces -- the page background and the
+   centre column -- dark. The mismatch was dormant until the dark tokens were
+   defined, because Tailwind v4 emits no rule at all for a utility whose theme
+   value does not exist. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
 	--color-background-light: #eeeeee;
 	--color-background-light-2: #dadada;
