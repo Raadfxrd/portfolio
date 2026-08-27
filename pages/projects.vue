@@ -149,7 +149,7 @@ const getInitials = (name: string) => {
                   <img
                       :alt="`${featuredRepo.name} thumbnail`"
                       :src="featuredRepo.thumbnail"
-                      class="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                      class="featured-repo__thumb h-full w-full object-cover"
                       @error="
                       (e) =>
                         ((e.target as HTMLImageElement).style.display = 'none')
@@ -263,7 +263,7 @@ const getInitials = (name: string) => {
               class="h-full"
           >
             <article
-                class="bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+                class="repo-card bg-background-light border-border-light flex h-full flex-col rounded-lg border transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
             >
               <div
                   v-if="repo.thumbnail"
@@ -272,7 +272,7 @@ const getInitials = (name: string) => {
                 <img
                     :alt="`${repo.name} thumbnail`"
                     :src="repo.thumbnail"
-                    class="h-full w-full object-cover"
+                    class="repo-card__thumb h-full w-full object-cover"
                     @error="
                     (e) =>
                       ((e.target as HTMLImageElement).style.display = 'none')
@@ -356,6 +356,15 @@ const getInitials = (name: string) => {
 </template>
 
 <style scoped>
+/* The twist came from the global `img:hover` rule, which only fires while the
+   pointer sits on the thumbnail itself. Anchor it to the card instead, so
+   hovering anywhere on a project -- title, description, topics, the meta row
+   -- moves its image. */
+.repo-card:hover .repo-card__thumb,
+.featured-repo:hover .featured-repo__thumb {
+  transform: scale(1.07) rotate(1deg);
+}
+
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
