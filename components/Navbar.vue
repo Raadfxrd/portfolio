@@ -53,6 +53,10 @@
             </div>
           </div>
 
+          <!-- Both controls carry the same hairline the pill does. Against a
+               20%-opaque blurred surface the hover-only ring left them with no
+               edge at rest, so they read as floating glyphs rather than
+               buttons; the ring stays as the hover state on top of it. -->
           <div class="flex flex-1 items-center justify-end gap-2">
             <!-- Mobile Menu Button -->
             <button
@@ -60,7 +64,7 @@
                 :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'"
                 ref="menuButtonRef"
                 aria-controls="mobile-menu"
-                class="backdrop-blur-fallback ring-border-light flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition duration-300 hover:ring-1 sm:hidden"
+                class="backdrop-blur-fallback border-border-light ring-border-light flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-solid transition duration-300 hover:ring-1 sm:hidden"
                 type="button"
                 @click="toggleMenu"
             >
@@ -73,7 +77,7 @@
             <!-- Theme Toggle Button -->
             <button
                 :aria-label="`Current theme: ${colorMode.preference}`"
-                class="backdrop-blur-fallback ring-border-light flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition duration-300 hover:ring-1 md:h-10 md:w-10"
+                class="backdrop-blur-fallback border-border-light ring-border-light flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-solid transition duration-300 hover:ring-1 md:h-10 md:w-10"
                 type="button"
                 @click="toggleTheme"
             >
@@ -92,13 +96,17 @@
               v-if="isMenuOpen"
               id="mobile-menu"
               ref="panelRef"
-              class="backdrop-blur-fallback border-border-light mt-3 overflow-hidden rounded-2xl border border-solid sm:hidden"
+              class="glass-menu border-border-light mt-3 overflow-hidden rounded-3xl border border-solid sm:hidden"
           >
-            <ul class="flex flex-col">
+            <!-- The specular sweep. Decorative, and clipped by the panel's own
+                 rounded corners. -->
+            <span aria-hidden="true" class="glass-menu__sheen"/>
+            <ul class="relative flex flex-col">
               <li
                   v-for="(link, index) in links"
                   :key="link.path"
                   :class="index > 0 && 'border-border-light border-t border-solid'"
+                  :style="{ '--i': index }"
               >
                 <NuxtLink
                     :to="link.path"
@@ -600,15 +608,148 @@ const icon = computed(() => {
   opacity: 0;
 }
 
+/* ---------------------------------------------------------------------------
+ * The mobile menu
+ *
+ * It unfolds out of the button that opened it rather than simply appearing:
+ * the origin is the top right corner, where that button sits, and the panel
+ * scales up past its resting size and settles back while the blur behind it
+ * ramps from nothing to full. A highlight sweeps across the surface once as it
+ * lands. Together those read as a pane of glass tilting into place and catching
+ * the light, rather than a card fading in -- which at 6px and 200ms was small
+ * enough and quick enough to miss entirely.
+ * ------------------------------------------------------------------------- */
+.glass-menu {
+  position: relative;
+  background-color: rgba(238, 238, 238, 0.55);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  /* A lit top edge, a shaded bottom one and a shadow beneath: the three cues
+     that give a flat rectangle some thickness. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6),
+  inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+  0 16px 40px rgba(0, 0, 0, 0.16);
+}
+
+/* Where the blur is real the surface can afford to be much thinner -- that is
+   what makes it read as glass rather than frosted plastic. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass-menu {
+    background-color: rgba(238, 238, 238, 0.35);
+  }
+
+  .dark .glass-menu {
+    background-color: rgba(51, 51, 51, 0.35);
+  }
+}
+
+.dark .glass-menu {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14),
+  inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+  0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.glass-menu__sheen {
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background: linear-gradient(
+      105deg,
+      transparent 32%,
+      rgba(255, 255, 255, 0.5) 50%,
+      transparent 68%
+  );
+  /* Driven from the element rather than from `.menu-enter-active`: Vue strips
+     the transition classes the moment the panel's own transition ends, which
+     would cut the sweep off halfway. The panel is `v-if`, so this runs on
+     every open regardless. */
+  animation: menuSheen 0.85s var(--motion-ease) 0.1s backwards;
+  opacity: 0;
+}
+
+.dark .glass-menu__sheen {
+  background: linear-gradient(
+      105deg,
+      transparent 32%,
+      rgba(255, 255, 255, 0.16) 50%,
+      transparent 68%
+  );
+}
+
+@keyframes menuSheen {
+  0% {
+    transform: translate3d(-130%, 0, 0);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(130%, 0, 0);
+    opacity: 0;
+  }
+}
+
+/* The links arrive behind the panel, one after the next, so the glass reads as
+   settling first and its contents as surfacing through it. Hung off the element
+   for the same reason as the sheen. */
+.glass-menu li {
+  animation: menuItem 0.45s var(--motion-ease) backwards;
+  animation-delay: calc(var(--i) * 55ms + 90ms);
+}
+
+@keyframes menuItem {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 .menu-enter-active,
 .menu-leave-active {
-  transition: opacity 0.2s var(--motion-ease),
-  transform 0.2s var(--motion-ease);
+  transform-origin: top right;
+  will-change: transform, opacity;
+}
+
+.menu-enter-active {
+  /* Overshoots on the scale and nowhere else, which is what gives it a springy
+     landing without the whole panel bouncing. */
+  transition: opacity 0.3s var(--motion-ease),
+  transform 0.5s cubic-bezier(0.22, 1.35, 0.36, 1),
+  -webkit-backdrop-filter 0.45s var(--motion-ease),
+  backdrop-filter 0.45s var(--motion-ease),
+  box-shadow 0.45s var(--motion-ease);
+}
+
+/* Dismissal is not a moment worth dwelling on: straight out, half the time. */
+.menu-leave-active {
+  transition: opacity 0.2s ease-in,
+  transform 0.2s ease-in,
+  -webkit-backdrop-filter 0.2s ease-in,
+  backdrop-filter 0.2s ease-in;
 }
 
 .menu-enter-from,
 .menu-leave-to {
   opacity: 0;
-  transform: translateY(-6px);
+  transform: translateY(-8px) scale(0.86);
+  -webkit-backdrop-filter: blur(0px) saturate(100%);
+  backdrop-filter: blur(0px) saturate(100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0),
+  inset 0 -1px 0 rgba(0, 0, 0, 0),
+  0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* Repeated under `.dark` only to outweigh the themed resting shadow above,
+   which is a descendant selector and would otherwise win over these. */
+.dark .menu-enter-from,
+.dark .menu-leave-to {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0),
+  inset 0 -1px 0 rgba(0, 0, 0, 0),
+  0 0 0 rgba(0, 0, 0, 0);
 }
 </style>
