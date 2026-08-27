@@ -7,23 +7,33 @@
         class="fixed top-4 left-1/2 z-50 flex w-full -translate-x-1/2 transform justify-center px-4 md:top-6"
     >
       <div ref="navRef" class="w-full md:w-2/3">
-        <div
-            class="flex w-full items-center justify-between gap-2 md:justify-around md:gap-0"
-        >
-          <!-- Small Logo.
-               The outer span is never transformed: it holds the slot in the
-               flow (removing it would slide the pill sideways) and its rect is
-               the flight's landing target. The image inside is what flies. -->
-          <span ref="slotRef" class="logo-slot inline-flex shrink-0">
-            <img
-                :style="flightStyle"
-                alt="Small Logo"
-                class="border-border-dark h-8 w-8 rounded-full border object-cover transition-transform hover:scale-105 hover:cursor-pointer md:h-10 md:w-10"
-                src="/img/raadfxrd.jpeg"
-                style="object-position: center top"
-                @click="$router.push('/')"
-            />
-          </span>
+        <!-- The flanks each take an equal share of whatever the pill leaves and
+             align their contents outward, so folding and unfolding the pill
+             moves nothing but the pill.
+
+             Previously this row was justify-around, which distributes free
+             space between every item: any change to the pill's width was
+             therefore shared out to the logo and the controls as well, and
+             hovering it slid the whole navbar around. Letting the flanks
+             absorb the change instead pins the logo to one edge and the
+             controls to the other, and centres the pill between them. -->
+        <div class="flex w-full items-center gap-2">
+          <div class="flex flex-1 justify-start">
+            <!-- Small Logo.
+                 The span is never transformed: it holds the slot in the flow
+                 and its rect is the flight's landing target. The image inside
+                 is what flies. -->
+            <span ref="slotRef" class="logo-slot inline-flex shrink-0">
+              <img
+                  :style="flightStyle"
+                  alt="Small Logo"
+                  class="border-border-dark h-8 w-8 rounded-full border object-cover transition-transform hover:scale-105 hover:cursor-pointer md:h-10 md:w-10"
+                  src="/img/raadfxrd.jpeg"
+                  style="object-position: center top"
+                  @click="$router.push('/')"
+              />
+            </span>
+          </div>
 
           <!-- Nav Links: the inline pill is a desktop affordance; below `sm`
                it is replaced by the menu button on the right. -->
@@ -37,7 +47,7 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex flex-1 items-center justify-end gap-2">
             <!-- Mobile Menu Button -->
             <button
                 :aria-expanded="isMenuOpen"
@@ -223,16 +233,27 @@ const animateFlight = (target) => {
   animationFrame = requestAnimationFrame(tick);
 };
 
-const measureFlight = () => {
+/**
+ * Read where the portrait and the slot currently are.
+ *
+ * Deliberately separate from deciding what the flight should do, because it has
+ * to be re-read at take-off as well as at page load. A measurement taken when
+ * the page settles is stale by the time anyone scrolls: the hero arrives inside
+ * a reveal transition that translates it 36px, the 4MB display font swaps in
+ * and reflows the text beside it, and hovering the portrait scales it to 95%.
+ * Any of those leaves the recorded centre somewhere the portrait no longer is,
+ * and the flight then starts from that phantom position -- which is the jump.
+ *
+ * @returns whether there is a portrait here to fly.
+ */
+const readFlightGeometry = () => {
   const hero = document.querySelector("[data-hero-portrait]");
   const slot = slotRef.value;
 
   if (reducedMotion || !hero || !slot) {
     flightDistance.value = 0;
     flightActive.value = false;
-    engaged = false;
-    settleFlight(1);
-    return;
+    return false;
   }
 
   const heroRect = hero.getBoundingClientRect();
@@ -250,10 +271,18 @@ const measureFlight = () => {
   flightDistance.value = heroCentreDocY.value - slotCentreY.value;
   flightActive.value = flightDistance.value > 0;
 
+  return flightActive.value;
+};
+
+const measureFlight = () => {
+  if (!readFlightGeometry()) {
+    engaged = false;
+    settleFlight(1);
+    return;
+  }
+
   scrollY.value = window.scrollY;
-  engaged =
-      flightDistance.value > 0 &&
-      scrollY.value / flightDistance.value > ENGAGE_AT;
+  engaged = scrollY.value / flightDistance.value > ENGAGE_AT;
 
   // Arriving back on the home page, the avatar is sitting in the header where
   // the previous page left it. Animating rather than settling is what flies it
