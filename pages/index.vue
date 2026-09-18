@@ -21,7 +21,7 @@
         v-if="showContent"
         :distance="36"
         :duration="1100"
-        class="flex min-h-[100svh] w-full flex-col items-center justify-center px-4 pt-24 pb-16 md:pt-28 md:pb-20"
+        class="flex min-h-svh w-full flex-col items-center justify-center px-4 pt-24 pb-16 md:pt-28 md:pb-20"
       >
         <div
           class="flex w-full max-w-5xl flex-col items-center justify-center gap-8 px-4 md:flex-row md:gap-12 md:px-6"
@@ -41,7 +41,7 @@
             />
           </div>
           <!-- Text Section -->
-          <div class="w-full max-w-lg text-center break-words md:text-left">
+          <div class="w-full max-w-lg text-center wrap-break-word md:text-left">
             <!-- Not `.gradient`: each letter is transformed by its own reveal
                  animation, and WebKit drops transformed descendants out of an
                  ancestor's `background-clip: text` -- which left the whole
