@@ -29,7 +29,7 @@
             </a>
             <a
                 class="group block transform transition-all duration-200 ease-out hover:scale-110"
-                href="https://linkedin.com/in/borys-babas"
+                href="https://linkedin.com/in/borysbabas"
                 target="_blank"
             >
               <i

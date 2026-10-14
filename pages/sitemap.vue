@@ -77,7 +77,7 @@ const externalLinks = [
   },
   {
     name: "LinkedIn",
-    url: "https://www.linkedin.com/in/borys-babas/",
+    url: "https://www.linkedin.com/in/borysbabas/",
     description: "Professional profile",
   },
   {
