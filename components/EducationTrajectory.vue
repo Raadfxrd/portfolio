@@ -48,6 +48,7 @@
         :details="currentEducation?.focusAreas"
         :icon="currentEducation?.icon || ''"
         :is-open="openModalIndex !== null && currentEducation !== null"
+        :link="currentEducation?.link"
         :meta-icon="AcademicCapIcon"
         :meta-text="currentEducation?.school || ''"
         :period="currentEducation?.period || ''"
@@ -70,6 +71,7 @@ const props = defineProps<{
     icon: string;
     description?: string;
     focusAreas?: string[];
+    link?: { href: string; label: string };
   }>;
 }>();
 

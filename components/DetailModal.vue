@@ -72,6 +72,18 @@
                 </li>
               </ul>
             </div>
+
+            <!-- Link -->
+            <a
+                v-if="link"
+                :href="link.href"
+                class="mt-2 inline-flex items-center gap-2 rounded-lg border border-border-light px-4 py-2 text-sm font-medium text-text-primary transition-colors duration-200 hover:bg-background-light"
+                rel="noopener noreferrer"
+                target="_blank"
+            >
+              <span>{{ link.label }}</span>
+              <ArrowTopRightOnSquareIcon class="h-4 w-4"/>
+            </a>
           </div>
         </div>
       </div>
@@ -80,7 +92,7 @@
 </template>
 
 <script lang="ts" setup>
-import {CalendarIcon} from "@heroicons/vue/24/outline";
+import {ArrowTopRightOnSquareIcon, CalendarIcon} from "@heroicons/vue/24/outline";
 import type {Component} from "vue";
 import {nextTick, onUnmounted, ref, useId, watch} from "vue";
 import {useEventListener} from "@vueuse/core";
@@ -95,6 +107,7 @@ const props = defineProps<{
   description?: string;
   details?: string[];
   detailsTitle: string;
+  link?: { href: string; label: string };
 }>();
 
 const emit = defineEmits<{

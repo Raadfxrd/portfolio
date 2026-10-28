@@ -333,7 +333,7 @@ const educations = [
     period: "2024 - 2025",
     icon: "/img/schools/hva.png",
     description:
-      "Specialized minor program exploring the intersection of technology, ethics, and societal impact of emerging technologies.",
+      "Specialized minor program exploring the intersection of technology, ethics, and societal impact of emerging technologies. For the client Tinker, our team is building Greep H1: a glove with a servo that pulls the index finger by a cord, to explore when a wearable turns from a tool into a control mechanism. I document the design and development process week by week in a devlog.",
     focusAreas: [
       "Ethical implications of emerging technologies",
       "Privacy and data security considerations",
@@ -341,7 +341,14 @@ const educations = [
       "Critical thinking about technology's role in society",
       "Responsible innovation and design",
       "Digital rights and surveillance",
+      "Greep H1 prototype: a Raspberry Pi Pico and servo in a 3D-printed module on the forearm, with printed rings guiding the cord",
+      "Privacy analysis of a controlling wearable, tested on necessity, transparency and consent",
+      "Brand research for the product: tone of voice, naming and expo touchpoints",
     ],
+    link: {
+      href: "https://greep-devlog.vercel.app",
+      label: "View the Greep H1 devlog (in Dutch)",
+    },
   },
 ];
 </script>
