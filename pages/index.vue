@@ -345,20 +345,22 @@ const educations = [
     },
   },
   {
-    degree: "Dark Tech",
+    degree: "Dark Tech: ParallaxAI",
     school: "Amsterdam University of Applied Sciences",
-    period: "2024 - 2025",
+    period: "2025 - 2026",
     icon: "/img/schools/hva.png",
     description:
-      "Specialized minor program exploring the intersection of technology, ethics, and societal impact of emerging technologies.",
+      "A half-year Dark Tech project on AI literacy. Our team built ParallaxAI: a photo booth where AI models make assumptions about you from a single photo, so everyday ChatGPT users see how confidently AI judges people without grounds, and how biased those judgments can be.",
     focusAreas: [
-      "Ethical implications of emerging technologies",
-      "Privacy and data security considerations",
-      "AI and machine learning ethics",
-      "Critical thinking about technology's role in society",
-      "Responsible innovation and design",
-      "Digital rights and surveillance",
+      "Vue 3 and TypeScript booth app with live face detection in the browser (TensorFlow.js)",
+      "FastAPI backend that sends the same photo and prompt to Claude, Gemini and GPT-5",
+      "Comparison of the models on variety, accuracy, response time, cost, robustness and bias",
+      "Advisory report on the dark and light sides of AI profiling, with advice on AI literacy",
     ],
+    link: {
+      href: "https://github.com/Raadfxrd/ParallaxAI",
+      label: "View ParallaxAI on GitHub",
+    },
   },
 ];
 </script>
